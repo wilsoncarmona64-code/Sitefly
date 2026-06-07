@@ -1,6 +1,7 @@
+cat > /workspace/js/config.js << 'EOF'
+// ===== SITEFLY CONFIGURATION =====
 const SUPABASE_URL = 'https://kyvcrzvpqkmfvnlqictl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dmNyenZwcWttZnZubHFpY3RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDAzMjUsImV4cCI6MjA5NTU3NjMyNX0.BppEWjs6MgNzB1KIlnBvDlUjdKaACBnwQemRXybfn14';
-
 var supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 var supabaseClient = supabase;
 console.log('SiteFly: Supabase conectado correctamente');
@@ -69,7 +70,7 @@ const sf_ai_content = {
         faqs: [{q: '¿Puedo enviar mi diseño?', a: 'Sí, aceptamos archivos en PNG o AI.'}]
     },
     'default': {
-        templates: [{ name: 'Moderno', theme: 'theme-modern', accent: '#0f172a', img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80' }],
+        templates: [{ name: 'Moderno', theme: 'theme-midnight', accent: '#6366f1', img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80' }],
         benefits: ['Servicio profesional garantizado', 'Atención personalizada', 'Calidad premium'],
         defaultProducts: [{name: 'Servicio Básico', price: 20.00, desc: 'Consultar detalles'}, {name: 'Servicio Premium', price: 35.00, desc: 'Incluye garantía'}],
         faqs: [{q: '¿Tiempo de entrega?', a: 'Generalmente 24-48 horas.'}]
@@ -87,3 +88,4 @@ allCategories.forEach(cat => {
         };
     }
 });
+EOF
