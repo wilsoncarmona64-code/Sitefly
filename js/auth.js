@@ -6,22 +6,45 @@ async function sf_handleLogin() {
         sf_showToast('Por favor ingresa tu correo electrónico', 'error');
         return; 
     }
-
+    
     const btn = document.getElementById('sf-login-btn');
+    const originalBtnText = btn.innerHTML;
     btn.innerHTML = '<div class="sf-loading"></div> Enviando...';
+    
+    // Check if we're handling a callback from Supabase
+    const hash = window.location.hash;
+    if (hash && (hash.includes('access_token') || hash.includes('type=recovery'))) {
+        console.log('Handling auth callback from URL');
+        return;
+    }
 
     if (supabaseClient) {
-        const { error } = await supabaseClient.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
+        const { error } = await supabaseClient.auth.signInWithOtp({ 
+            email,
+            options: { 
+                emailRedirectTo: window.location.origin + window.location.pathname,
+                shouldCreateUser: true
+            } 
+        });
+        
         if (error) { 
             console.error('Login error:', error);
             sf_showToast('Error: ' + error.message, 'error');
-            btn.innerHTML = '<i data-lucide="mail" class="w-5 h-5"></i> Enviar enlace mágico';
+            btn.innerHTML = originalBtnText;
             if (typeof lucide !== 'undefined') lucide.createIcons();
             return; 
         }
+        
         sf_showToast('¡Revisa tu correo! Hemos enviado un enlace mágico.', 'success');
         btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> Enlace enviado';
         if (typeof lucide !== 'undefined') lucide.createIcons();
+        
+        localStorage.setItem('sf_pending_email', email);
+        
+        setTimeout(() => {
+            btn.innerHTML = originalBtnText;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }, 3000);
     } else {
         sf_showToast('Supabase no está disponible. Usando modo demo.', 'warning');
         sf_proceedToDemo(email);
@@ -40,9 +63,11 @@ function sf_proceedToDemo(email) {
 // ===== SUPABASE AUTH LISTENER =====
 if (supabaseClient) {
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
-        console.log('Auth state changed:', event, session);
-        if (event === 'SIGNED_IN' && session) {
+        console.log('Auth state changed:', event, session?.user?.id);
+        
+        if (session) {
             sf_state.userId = session.user.id;
+            sf_state.session = session;
             console.log('User signed in:', sf_state.userId);
 
             const { data: business, error } = await supabaseClient
@@ -52,6 +77,7 @@ if (supabaseClient) {
                 .single();
 
             if (error && error.code !== 'PGRST116') {
+                console.error('Error loading business:', error);
                 sf_showToast('Error al cargar tu negocio: ' + error.message, 'error');
                 return;
             }
@@ -70,6 +96,7 @@ if (supabaseClient) {
                     hours: business.hours || 'Lun - Dom: 8:00 AM - 10:00 PM'
                 };
                 sf_state.currentTemplate = business.template || 'Moderno';
+                sf_state.plan = business.plan || 'FREE';
 
                 await sf_loadProducts();
                 await sf_loadOrders();
@@ -107,7 +134,8 @@ async function sf_createBusiness() {
             location: sf_state.userData.location,
             whatsapp: sf_state.userData.whatsapp,
             hours: sf_state.userData.hours,
-            template: sf_state.currentTemplate
+            template: sf_state.currentTemplate,
+            plan: sf_state.plan
         })
         .select()
         .single();
