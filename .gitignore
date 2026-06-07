@@ -1,19 +1,5 @@
-# OS generated files
-.DS_Store
-Thumbs.db
+(css/styles.css is a source file, and there are no build artifacts, dependencies, or temp files in the changes)
 
-# Editors
-.vscode/
-.idea/
+```css
 
-# Logs
-*.log
-
-# Supabase local development (si usas CLI)
-.supabase/
-
-# Python (por si luego usas Edge Functions localmente)
-__pycache__/
-*.pyc
-venv/
-.env
+```
