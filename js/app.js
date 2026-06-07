@@ -1,10 +1,3 @@
---- js/app.js (原始)
-// ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', () => {
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-});
-
-+++ js/app.js (修改后)
 // ===== SITEFLY CORE APPLICATION =====
 // Gestión de estado, navegación y utilidades globales
 
