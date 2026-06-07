@@ -5,15 +5,41 @@ let supabaseClient = null;
 
 try {
     if (typeof supabase !== 'undefined') {
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true,
+                flowType: 'pkce'
+            }
+        });
     }
 } catch (e) { console.log('Supabase init error:', e); }
+
+// ===== PRICING PLANS =====
+const SF_PRICING = {
+    FREE: {
+        name: 'Gratuito',
+        price: 0,
+        features: ['Hasta 5 productos', 'Pedidos por WhatsApp', 'Plantilla básica', 'SEO básico'],
+        limit: 5,
+        recommended: false
+    },
+    PRO: {
+        name: 'Pro',
+        price: 9,
+        features: ['Productos ilimitados', 'Pedidos ilimitados', 'Plantillas premium', 'SEO avanzado', 'Soporte prioritario', 'Sin comisión'],
+        limit: Infinity,
+        recommended: true
+    }
+};
 
 // ===== STATE =====
 const sf_state = {
     view: 'login', chatStep: 0, userId: null, businessId: null,
     userData: { category: '', name: '', description: '', location: '', whatsapp: '', hours: 'Lun - Dom: 8:00 AM - 10:00 PM' },
-    products: [], cart: [], orders: [], adminTab: 'negocio', currentTemplate: 'Midnight'
+    products: [], cart: [], orders: [], adminTab: 'negocio', currentTemplate: 'Midnight',
+    plan: 'FREE', session: null
 };
 
 // ===== AI CONTENT DATABASE =====
