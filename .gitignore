@@ -1,1 +1,19 @@
-Nothing needs to be added to .gitignore since the changes only include HTML files (negocio.html and index.html) which are source files and not build artifacts, dependencies, or temporary files.
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Supabase local development (si usas CLI)
+.supabase/
+
+# Python (por si luego usas Edge Functions localmente)
+__pycache__/
+*.pyc
+venv/
+.env
