@@ -59,14 +59,226 @@
         </div>
     </div>
 
+    <!-- ONBOARDING WIZARD -->
+    <div id="sf-view-onboarding" class="flex-1 flex items-center justify-center p-6 sf-hidden">
+        <div class="w-full max-w-2xl">
+            <div class="text-center mb-8">
+                <img src="https://image.qwenlm.ai/public_source/0ba08b56-35a5-4f25-adda-eb45071b3040/115239c29-3833-4da1-a16c-f38fdf34252c.png" alt="SiteFly" class="w-16 h-16 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]">
+                <h1 class="text-2xl font-bold mb-2">¡Bienvenido a SiteFly!</h1>
+                <p class="text-slate-400">Vamos a configurar tu negocio en 3 pasos rápidos.</p>
+            </div>
+            <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-8 backdrop-blur-sm">
+                <!-- Progress -->
+                <div class="flex items-center justify-between mb-8">
+                    <div class="flex items-center gap-2">
+                        <div id="sf-onboard-step-1-indicator" class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-bold">1</div>
+                        <div class="w-16 h-0.5 bg-slate-700" id="sf-onboard-line-1"></div>
+                        <div id="sf-onboard-step-2-indicator" class="w-8 h-8 rounded-full bg-slate-700 text-slate-400 flex items-center justify-center text-sm font-bold">2</div>
+                        <div class="w-16 h-0.5 bg-slate-700" id="sf-onboard-line-2"></div>
+                        <div id="sf-onboard-step-3-indicator" class="w-8 h-8 rounded-full bg-slate-700 text-slate-400 flex items-center justify-center text-sm font-bold">3</div>
+                    </div>
+                </div>
+                
+                <!-- Step 1: Nombre y WhatsApp -->
+                <div id="sf-onboard-step-1" class="sf-onboard-step">
+                    <h2 class="text-xl font-bold mb-4">Paso 1: Información básica</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Nombre de tu negocio *</label>
+                            <input type="text" id="sf-onboard-name" placeholder="Ej: Café Central" class="sf-input w-full px-4 py-3 rounded-xl text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Categoría *</label>
+                            <select id="sf-onboard-category" class="sf-input w-full px-4 py-3 rounded-xl text-white bg-slate-800">
+                                <option value="">Selecciona una categoría</option>
+                                <option value="Restaurante">Restaurante</option>
+                                <option value="Soda">Soda</option>
+                                <option value="Cafetería">Cafetería</option>
+                                <option value="Barbería">Barbería</option>
+                                <option value="Sublimado">Sublimado</option>
+                                <option value="Panadería">Panadería</option>
+                                <option value="Belleza">Belleza</option>
+                                <option value="Tienda de ropa">Tienda de ropa</option>
+                                <option value="Ferretería">Ferretería</option>
+                                <option value="Taller mecánico">Taller mecánico</option>
+                                <option value="Profesional independiente">Profesional independiente</option>
+                                <option value="Consultorio">Consultorio</option>
+                                <option value="Veterinaria">Veterinaria</option>
+                                <option value="Gimnasio">Gimnasio</option>
+                                <option value="Hotel">Hotel</option>
+                                <option value="Turismo">Turismo</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">WhatsApp de contacto *</label>
+                            <input type="text" id="sf-onboard-whatsapp" placeholder="+506 8888 8888" class="sf-input w-full px-4 py-3 rounded-xl text-white">
+                        </div>
+                        <button onclick="sf_nextOnboardingStep(2)" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                            Continuar <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Logo y Color -->
+                <div id="sf-onboard-step-2" class="sf-onboard-step sf-hidden">
+                    <h2 class="text-xl font-bold mb-4">Paso 2: Personaliza tu marca</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">URL del logo (opcional)</label>
+                            <input type="text" id="sf-onboard-logo" placeholder="https://ejemplo.com/logo.png" class="sf-input w-full px-4 py-3 rounded-xl text-white">
+                            <p class="text-xs text-slate-500 mt-1">Puedes usar una URL de imagen o dejarlo vacío para usar el logo por defecto.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Color de marca</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" id="sf-onboard-color" value="#6366f1" class="w-12 h-12 rounded-lg cursor-pointer border-0">
+                                <span class="text-slate-400 text-sm">Elige el color principal de tu negocio</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="sf_nextOnboardingStep(1)" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl transition-all">
+                                Atrás
+                            </button>
+                            <button onclick="sf_nextOnboardingStep(3)" class="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                                Continuar <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Primer producto -->
+                <div id="sf-onboard-step-3" class="sf-onboard-step sf-hidden">
+                    <h2 class="text-xl font-bold mb-4">Paso 3: Agrega tu primer producto</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Nombre del producto *</label>
+                            <input type="text" id="sf-onboard-product-name" placeholder="Ej: Hamburguesa Clásica" class="sf-input w-full px-4 py-3 rounded-xl text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Descripción</label>
+                            <textarea id="sf-onboard-product-desc" rows="2" placeholder="Describe tu producto..." class="sf-input w-full px-4 py-3 rounded-xl text-white resize-none"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Precio ($) *</label>
+                            <input type="number" id="sf-onboard-product-price" step="0.01" placeholder="0.00" class="sf-input w-full px-4 py-3 rounded-xl text-white">
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="sf_nextOnboardingStep(2)" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl transition-all">
+                                Atrás
+                            </button>
+                            <button onclick="sf_completeOnboarding()" id="sf-complete-onboard-btn" class="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                                <i data-lucide="check" class="w-5 h-5"></i> ¡Crear mi negocio!
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRICING MODAL -->
+    <div id="sf-pricing-modal" class="sf-hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target===this) sf_closePricingModal()">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 lg:p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Elige tu plan</h2>
+                        <p class="text-slate-400 text-sm">Comienza gratis, upgrade cuando crezcas</p>
+                    </div>
+                    <button onclick="sf_closePricingModal()" class="text-slate-400 hover:text-white transition-colors">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-6 mb-8">
+                    <!-- Free Plan -->
+                    <div class="sf-pricing-card">
+                        <h3 class="text-xl font-bold text-white mb-2">Gratuito</h3>
+                        <div class="mb-4">
+                            <span class="text-4xl font-bold text-white">$0</span>
+                            <span class="text-slate-400">/mes</span>
+                        </div>
+                        <ul class="space-y-3 mb-6">
+                            <li class="flex items-center gap-2 text-slate-300 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-green-400"></i>
+                                Hasta 5 productos
+                            </li>
+                            <li class="flex items-center gap-2 text-slate-300 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-green-400"></i>
+                                Pedidos por WhatsApp
+                            </li>
+                            <li class="flex items-center gap-2 text-slate-300 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-green-400"></i>
+                                Plantilla básica
+                            </li>
+                            <li class="flex items-center gap-2 text-slate-300 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-green-400"></i>
+                                SEO básico
+                            </li>
+                        </ul>
+                        <button onclick="sf_selectPlan('FREE')" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl transition-all">
+                            Comenzar Gratis
+                        </button>
+                    </div>
+
+                    <!-- Pro Plan -->
+                    <div class="sf-pricing-card featured border-indigo-500">
+                        <h3 class="text-xl font-bold text-white mb-2">Pro</h3>
+                        <div class="mb-4">
+                            <span class="text-4xl font-bold text-white">$9</span>
+                            <span class="text-slate-400">/mes</span>
+                        </div>
+                        <ul class="space-y-3 mb-6">
+                            <li class="flex items-center gap-2 text-slate-300 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+                                Productos ilimitados
+                            </li>
+                            <li class="flex items-center gap-2 text-slate-300 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+                                Pedidos ilimitados
+                            </li>
+                            <li class="flex items-center gap-2 text-slate-300 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+                                Plantillas premium
+                            </li>
+                            <li class="flex items-center gap-2 text-slate-300 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+                                SEO avanzado
+                            </li>
+                            <li class="flex items-center gap-2 text-slate-300 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+                                Soporte prioritario
+                            </li>
+                            <li class="flex items-center gap-2 text-slate-300 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+                                Sin comisión
+                            </li>
+                        </ul>
+                        <button onclick="sf_selectPlan('PRO')" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-3 rounded-xl transition-all">
+                            Obtener Pro
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-center text-slate-400 text-sm">
+                    <p>¿Tienes dudas? <a href="https://wa.me/50688888888" target="_blank" class="text-indigo-400 hover:text-indigo-300">Contáctanos por WhatsApp</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ADMIN PANEL -->
     <div id="sf-view-admin" class="flex-1 flex flex-col lg:flex-row sf-hidden">
         <aside class="w-full lg:w-64 bg-slate-900 border-b lg:border-b-0 lg:border-r border-slate-700 p-4 flex lg:flex-col gap-2 overflow-x-auto">
             <div class="hidden lg:flex items-center gap-2 mb-6 px-2">
                 <img src="https://image.qwenlm.ai/public_source/0ba08b56-35a5-4f25-adda-eb45071b3040/115239c29-3833-4da1-a16c-f38fdf34252c.png" class="w-8 h-8">
                 <span class="font-bold">SiteFly</span>
-                <span class="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded">Pro</span>
+                <span id="sf-plan-badge" class="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded">Free</span>
             </div>
+            <button onclick="sf_switchAdminTab('dashboard')" id="sf-tab-btn-dashboard" class="sf-tab-inactive flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap">
+                <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Dashboard
+            </button>
             <button onclick="sf_switchAdminTab('negocio')" id="sf-tab-btn-negocio" class="sf-tab-active flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap">
                 <i data-lucide="building-2" class="w-4 h-4"></i> Mi Negocio
             </button>
@@ -82,6 +294,9 @@
             </button>
 
             <div class="hidden lg:block mt-auto pt-4 border-t border-slate-700 space-y-2">
+                <button onclick="sf_showPricingModal()" class="w-full bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                    <i data-lucide="credit-card" class="w-4 h-4"></i> Upgrade
+                </button>
                 <button onclick="sf_showPreview()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors relative shadow-lg shadow-emerald-900/50">
                     <i data-lucide="globe" class="w-4 h-4"></i> Ver mi página web
                     <span id="sf-cart-badge-desktop" class="sf-cart-badge sf-hidden">0</span>
@@ -90,6 +305,62 @@
         </aside>
 
         <main class="flex-1 overflow-y-auto p-6 lg:p-8">
+            <!-- Tab: Dashboard -->
+            <div id="sf-admin-dashboard" class="sf-admin-panel sf-hidden max-w-6xl">
+                <h2 class="text-2xl font-bold mb-6">Dashboard</h2>
+                
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <i data-lucide="shopping-bag" class="w-8 h-8 text-indigo-400"></i>
+                            <span class="text-xs text-slate-400">Total pedidos</span>
+                        </div>
+                        <p class="text-3xl font-bold text-white" id="sf-stat-total-orders">0</p>
+                        <p class="text-xs text-green-400 mt-1" id="sf-stat-orders-change">+0% esta semana</p>
+                    </div>
+                    <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <i data-lucide="dollar-sign" class="w-8 h-8 text-emerald-400"></i>
+                            <span class="text-xs text-slate-400">Ingresos mes</span>
+                        </div>
+                        <p class="text-3xl font-bold text-white" id="sf-stat-revenue">$0</p>
+                        <p class="text-xs text-green-400 mt-1" id="sf-stat-revenue-change">+0% vs mes anterior</p>
+                    </div>
+                    <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <i data-lucide="package" class="w-8 h-8 text-purple-400"></i>
+                            <span class="text-xs text-slate-400">Productos activos</span>
+                        </div>
+                        <p class="text-3xl font-bold text-white" id="sf-stat-products">0</p>
+                        <p class="text-xs text-slate-400 mt-1">de <span id="sf-stat-products-limit">5</span> permitidos</p>
+                    </div>
+                    <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <i data-lucide="eye" class="w-8 h-8 text-orange-400"></i>
+                            <span class="text-xs text-slate-400">Visitas hoy</span>
+                        </div>
+                        <p class="text-3xl font-bold text-white" id="sf-stat-visits">0</p>
+                        <p class="text-xs text-slate-400 mt-1">Estimado</p>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6 mb-6">
+                    <h3 class="text-lg font-bold mb-4">Pedidos últimos 7 días</h3>
+                    <canvas id="sf-orders-chart" height="80"></canvas>
+                </div>
+
+                <!-- Recent Orders -->
+                <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold">Pedidos recientes</h3>
+                        <button onclick="sf_switchAdminTab('pedidos')" class="text-sm text-indigo-400 hover:text-indigo-300">Ver todos</button>
+                    </div>
+                    <div id="sf-recent-orders" class="space-y-3"></div>
+                </div>
+            </div>
+
             <!-- Tab: Mi Negocio -->
             <div id="sf-admin-negocio" class="sf-admin-panel max-w-3xl">
                 <div class="flex items-center justify-between mb-6">
@@ -102,25 +373,38 @@
                 <div class="space-y-5">
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-2">Nombre del negocio</label>
-                        <input type="text" id="sf-admin-name" class="sf-input w-full px-4 py-3 rounded-xl text-white" onchange="sf_updateBusiness()">
+                        <input type="text" id="sf-admin-name" class="sf-input w-full px-4 py-3 rounded-xl text-white" oninput="sf_previewTimeout=setTimeout(sf_updatePreview,500)" onchange="sf_updateBusiness()">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-2">Descripción (Generada por IA)</label>
-                        <textarea id="sf-admin-desc" rows="3" class="sf-input w-full px-4 py-3 rounded-xl text-white resize-none" onchange="sf_updateBusiness()"></textarea>
+                        <textarea id="sf-admin-desc" rows="3" class="sf-input w-full px-4 py-3 rounded-xl text-white resize-none" oninput="sf_previewTimeout=setTimeout(sf_updatePreview,500)" onchange="sf_updateBusiness()"></textarea>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-2">Ubicación</label>
-                            <input type="text" id="sf-admin-location" class="sf-input w-full px-4 py-3 rounded-xl text-white" onchange="sf_updateBusiness()">
+                            <input type="text" id="sf-admin-location" class="sf-input w-full px-4 py-3 rounded-xl text-white" oninput="sf_previewTimeout=setTimeout(sf_updatePreview,500)" onchange="sf_updateBusiness()">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-2">WhatsApp</label>
-                            <input type="text" id="sf-admin-whatsapp" class="sf-input w-full px-4 py-3 rounded-xl text-white" onchange="sf_updateBusiness()" placeholder="+506 8888 8888">
+                            <input type="text" id="sf-admin-whatsapp" class="sf-input w-full px-4 py-3 rounded-xl text-white" oninput="sf_previewTimeout=setTimeout(sf_updatePreview,500)" onchange="sf_updateBusiness()" placeholder="+506 8888 8888">
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-2">Horario de atención</label>
-                        <input type="text" id="sf-admin-hours" class="sf-input w-full px-4 py-3 rounded-xl text-white" onchange="sf_updateBusiness()" placeholder="Lun - Dom: 8:00 AM - 10:00 PM">
+                        <input type="text" id="sf-admin-hours" class="sf-input w-full px-4 py-3 rounded-xl text-white" oninput="sf_previewTimeout=setTimeout(sf_updatePreview,500)" onchange="sf_updateBusiness()" placeholder="Lun - Dom: 8:00 AM - 10:00 PM">
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Color de marca</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" id="sf-admin-color" value="#6366f1" class="w-12 h-12 rounded-lg cursor-pointer border-0" onchange="sf_updateBrandColor(this.value)">
+                                <span id="sf-admin-color-value" class="text-slate-400 text-sm">#6366f1</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Logo URL</label>
+                            <input type="text" id="sf-admin-logo" class="sf-input w-full px-4 py-3 rounded-xl text-white" placeholder="https://..." onchange="sf_updateBusiness()">
+                        </div>
                     </div>
                     <div class="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 flex items-start gap-3">
                         <i data-lucide="sparkles" class="w-5 h-5 text-indigo-400 mt-0.5"></i>
@@ -128,6 +412,14 @@
                             <p class="text-sm font-medium text-indigo-200">SEO Automático Aplicado</p>
                             <p class="text-xs text-indigo-300/70 mt-1" id="sf-seo-display">Meta descripción optimizada para tu categoría y ubicación.</p>
                         </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="sf_showPublicPage()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                            <i data-lucide="external-link" class="w-5 h-5"></i> Ver página pública
+                        </button>
+                        <button onclick="sf_updateBusiness()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition-all">
+                            Guardar cambios
+                        </button>
                     </div>
                 </div>
             </div>

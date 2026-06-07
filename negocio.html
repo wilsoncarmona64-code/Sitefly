@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SiteFly - Página del Negocio</title>
+    <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.15/index.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .business-hero { 
+            position: relative; 
+            background-size: cover; 
+            background-position: center; 
+            min-height: 60vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+        }
+        .business-hero-overlay { 
+            position: absolute; 
+            inset: 0; 
+            background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.8) 100%);
+        }
+        .business-hero-content { 
+            position: relative; 
+            z-index: 10; 
+            text-align: center; 
+            color: white; 
+            padding: 2rem; 
+            max-width: 800px;
+        }
+        .product-card { 
+            border-radius: 16px; 
+            overflow: hidden; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+            transition: transform 0.3s, box-shadow 0.3s;
+            background: white;
+        }
+        .product-card:hover { 
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+        }
+        .cart-float { 
+            position: fixed; 
+            bottom: 100px; 
+            right: 24px; 
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+            color: white; 
+            padding: 16px 24px; 
+            border-radius: 50px; 
+            font-weight: 600; 
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4); 
+            z-index: 100; 
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .cart-float:hover { 
+            transform: scale(1.05);
+            box-shadow: 0 8px 30px rgba(16, 185, 129, 0.6);
+        }
+        .whatsapp-float { 
+            position: fixed; 
+            bottom: 24px; 
+            right: 24px; 
+            width: 60px; 
+            height: 60px; 
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4); 
+            z-index: 100; 
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .whatsapp-float:hover { 
+            transform: scale(1.1) rotate(10deg);
+            box-shadow: 0 8px 30px rgba(37, 211, 102, 0.6);
+        }
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: #1e293b;
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+    <!-- Loading -->
+    <div id="loading" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-white text-lg">Cargando...</p>
+        </div>
+    </div>
+
+    <!-- Error -->
+    <div id="error-view" class="hidden min-h-screen flex items-center justify-center p-6">
+        <div class="text-center max-w-md">
+            <i data-lucide="alert-circle" class="w-16 h-16 text-red-500 mx-auto mb-4"></i>
+            <h1 class="text-2xl font-bold mb-2">Negocio no encontrado</h1>
+            <p class="text-slate-500 mb-6">El negocio que buscas no existe o ha sido eliminado.</p>
+            <a href="index.html" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-medium transition-colors">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver al inicio
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content" class="hidden">
+        <!-- Hero Section -->
+        <section class="business-hero" id="hero-section">
+            <div class="business-hero-overlay"></div>
+            <div class="business-hero-content">
+                <p class="text-sm uppercase tracking-widest mb-4 opacity-80" id="hero-category">Categoría</p>
+                <h1 class="text-4xl md:text-6xl font-bold mb-4 leading-tight" id="hero-name">Nombre del Negocio</h1>
+                <p class="text-lg md:text-xl opacity-90 mb-6 max-w-2xl mx-auto" id="hero-description">Descripción del negocio</p>
+                <a id="hero-whatsapp-btn" href="#" target="_blank" class="inline-flex items-center gap-2 px-8 py-4 rounded-full font-semibold text-lg transition-transform hover:scale-105 text-white" style="background: #25D366">
+                    <i data-lucide="message-circle" class="w-5 h-5"></i> Contactar por WhatsApp
+                </a>
+            </div>
+        </section>
+
+        <!-- Info Section -->
+        <section class="py-16 px-6 bg-white">
+            <div class="max-w-4xl mx-auto">
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <p class="text-sm uppercase tracking-widest mb-2 text-indigo-600 font-semibold">Sobre nosotros</p>
+                        <h2 class="text-3xl font-bold mb-4">Bienvenidos</h2>
+                        <p class="text-lg text-slate-600 leading-relaxed mb-6" id="info-description">Descripción completa del negocio.</p>
+                        <div class="space-y-3 mb-6" id="info-benefits"></div>
+                        <div class="flex flex-wrap gap-4 text-sm text-slate-500">
+                            <span class="flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4"></i> <span id="info-location">Ubicación</span></span>
+                            <span class="flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4"></i> <span id="info-hours">Horario</span></span>
+                        </div>
+                    </div>
+                    <div class="bg-indigo-50 rounded-2xl p-6">
+                        <h3 class="text-xl font-bold mb-4">Preguntas Frecuentes</h3>
+                        <div id="info-faqs" class="space-y-4"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Products Section -->
+        <section class="py-16 px-6 bg-slate-50">
+            <div class="max-w-6xl mx-auto">
+                <p class="text-sm uppercase tracking-widest mb-2 text-indigo-600 font-semibold text-center">Nuestro catálogo</p>
+                <h2 class="text-3xl font-bold mb-8 text-center">Productos y Servicios</h2>
+                <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Products will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="py-8 text-center text-sm text-slate-500 border-t border-slate-200">
+            <p id="footer-name">© 2024 Nombre del Negocio. Todos los derechos reservados.</p>
+            <p class="mt-2">Creado con ❤️ por <a href="https://sitefly-teal.vercel.app" target="_blank" class="font-bold text-indigo-600 hover:text-indigo-500">SiteFly</a></p>
+        </footer>
+
+        <!-- Floating Cart Button -->
+        <div id="cart-float" class="cart-float hidden" onclick="openCartModal()">
+            <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+            <span id="cart-count">0</span> items - $<span id="cart-total">0.00</span>
+        </div>
+
+        <!-- WhatsApp Float -->
+        <a id="whatsapp-float" href="#" target="_blank" class="whatsapp-float hidden">
+            <i data-lucide="message-circle" class="w-7 h-7 text-white"></i>
+        </a>
+    </div>
+
+    <!-- Cart Modal -->
+    <div id="cart-modal" class="hidden modal-overlay" onclick="if(event.target===this) closeCartModal()">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-white">Tu Carrito</h2>
+                <button onclick="closeCartModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div id="cart-items" class="space-y-4 mb-6 max-h-64 overflow-y-auto"></div>
+            <div class="border-t border-slate-600 pt-4 space-y-2">
+                <div class="flex justify-between text-slate-300"><span>Subtotal</span><span id="cart-subtotal">$0.00</span></div>
+                <div class="flex justify-between text-slate-300"><span>Envío</span><span id="cart-shipping">$1.50</span></div>
+                <div class="flex justify-between text-xl font-bold text-white pt-2"><span>Total</span><span id="cart-modal-total">$0.00</span></div>
+            </div>
+            <div class="mt-6 space-y-3">
+                <input type="text" id="cart-name" placeholder="Tu nombre *" class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500">
+                <input type="tel" id="cart-phone" placeholder="Tu teléfono *" class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500">
+                <textarea id="cart-address" placeholder="Dirección de entrega *" rows="2" class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 resize-none"></textarea>
+                <button onclick="submitOrder()" id="cart-submit-btn" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-4 rounded-xl transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="send" class="w-5 h-5"></i> Enviar pedido por WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script>
+        // ===== BUSINESS PAGE LOGIC =====
+        let businessData = null;
+        let products = [];
+        let cart = [];
+        const whatsappNumber = '50688888888'; // Default fallback
+
+        // Get business ID from URL
+        function getBusinessId() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        // Initialize page
+        async function initBusinessPage() {
+            const businessId = getBusinessId();
+            
+            if (!businessId) {
+                showError();
+                return;
+            }
+
+            try {
+                // Load business data
+                const { data: business, error: bizError } = await supabaseClient
+                    .from('businesses')
+                    .select('*')
+                    .eq('id', businessId)
+                    .single();
+
+                if (bizError || !business) {
+                    console.error('Error loading business:', bizError);
+                    showError();
+                    return;
+                }
+
+                businessData = business;
+
+                // Load products
+                const { data: productsData, error: prodError } = await supabaseClient
+                    .from('products')
+                    .select('*')
+                    .eq('business_id', businessId)
+                    .order('created_at', { ascending: false });
+
+                if (!prodError && productsData) {
+                    products = productsData;
+                }
+
+                // Render page
+                renderPage();
+                
+                // Hide loading, show content
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+                
+                // Initialize icons
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                showError();
+            }
+        }
+
+        function showError() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error-view').classList.remove('hidden');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function renderPage() {
+            // Hero section
+            document.getElementById('hero-category').textContent = businessData.category || 'Negocio';
+            document.getElementById('hero-name').textContent = businessData.name || 'Mi Negocio';
+            document.getElementById('hero-description').textContent = businessData.description || '';
+            
+            // Info section
+            document.getElementById('info-description').textContent = businessData.description || '';
+            document.getElementById('info-location').textContent = businessData.location || 'Ubicación no especificada';
+            document.getElementById('info-hours').textContent = businessData.hours || 'Horario no especificado';
+            
+            // Benefits (using default based on category)
+            const categoryContent = sf_ai_content[businessData.category] || sf_ai_content['default'];
+            const benefitsHtml = (categoryContent.benefits || []).map(b => 
+                `<div class="flex items-center gap-3"><i data-lucide="check-circle" class="w-5 h-5 text-green-500 flex-shrink-0"></i><span>${escapeHtml(b)}</span></div>`
+            ).join('');
+            document.getElementById('info-benefits').innerHTML = benefitsHtml;
+
+            // FAQs
+            const faqsHtml = (categoryContent.faqs || []).map(f => 
+                `<div><h4 class="font-semibold mb-1">${escapeHtml(f.q)}</h4><p class="text-sm text-slate-600">${escapeHtml(f.a)}</p></div>`
+            ).join('');
+            document.getElementById('info-faqs').innerHTML = faqsHtml || '<p class="text-slate-600">No hay preguntas frecuentes registradas.</p>';
+
+            // Footer
+            document.getElementById('footer-name').textContent = `© 2024 ${businessData.name || 'Mi Negocio'}. Todos los derechos reservados.`;
+
+            // Products
+            renderProducts();
+
+            // WhatsApp buttons
+            const whatsapp = validateWhatsapp(businessData.whatsapp);
+            if (whatsapp) {
+                const waLink = `https://wa.me/${whatsapp}`;
+                document.getElementById('hero-whatsapp-btn').href = waLink;
+                document.getElementById('whatsapp-float').href = waLink;
+                document.getElementById('whatsapp-float').classList.remove('hidden');
+            } else {
+                document.getElementById('hero-whatsapp-btn').classList.add('hidden');
+            }
+
+            // Hero background
+            const template = categoryContent.templates?.[0] || sf_ai_content['default'].templates[0];
+            document.getElementById('hero-section').style.backgroundImage = `url('${template.img}')`;
+        }
+
+        function renderProducts() {
+            const container = document.getElementById('products-grid');
+            
+            if (products.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-500 py-12 col-span-full">No hay productos disponibles aún.</p>';
+                return;
+            }
+
+            container.innerHTML = products.map(p => `
+                <div class="product-card">
+                    <div class="h-48 bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
+                        <i data-lucide="package" class="w-12 h-12 text-slate-400"></i>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg mb-1">${escapeHtml(p.name)}</h3>
+                        <p class="text-sm text-slate-600 mb-3">${escapeHtml(p.description || '')}</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xl font-bold text-indigo-600">$${parseFloat(p.price).toFixed(2)}</span>
+                            <button onclick="addToCart('${p.id}')" class="text-sm font-medium px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors flex items-center gap-1">
+                                <i data-lucide="plus" class="w-4 h-4"></i> Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ===== CART FUNCTIONS =====
+        function addToCart(productId) {
+            const product = products.find(p => p.id == productId);
+            if (!product) return;
+
+            const existingItem = cart.find(item => item.id == productId);
+            if (existingItem) {
+                existingItem.qty += 1;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+
+            updateCartUI();
+            showToast('Producto agregado al carrito', 'success');
+        }
+
+        function removeFromCart(productId) {
+            const index = cart.findIndex(item => item.id == productId);
+            if (index === -1) return;
+
+            if (cart[index].qty > 1) {
+                cart[index].qty -= 1;
+            } else {
+                cart.splice(index, 1);
+            }
+
+            updateCartUI();
+            renderCartItems();
+        }
+
+        function getCartTotal() {
+            return cart.reduce((sum, item) => sum + (parseFloat(item.price) * item.qty), 0);
+        }
+
+        function updateCartUI() {
+            const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+            const total = getCartTotal();
+
+            document.getElementById('cart-count').textContent = totalItems;
+            document.getElementById('cart-total').textContent = total.toFixed(2);
+
+            const cartFloat = document.getElementById('cart-float');
+            if (totalItems > 0) {
+                cartFloat.classList.remove('hidden');
+            } else {
+                cartFloat.classList.add('hidden');
+            }
+        }
+
+        function openCartModal() {
+            renderCartItems();
+            document.getElementById('cart-modal').classList.remove('hidden');
+        }
+
+        function closeCartModal() {
+            document.getElementById('cart-modal').classList.add('hidden');
+        }
+
+        function renderCartItems() {
+            const container = document.getElementById('cart-items');
+            const subtotal = getCartTotal();
+            const shipping = subtotal > 0 ? 1.50 : 0;
+            const total = subtotal + shipping;
+
+            if (cart.length === 0) {
+                container.innerHTML = '<p class="text-slate-400 text-center py-8">Tu carrito está vacío.</p>';
+            } else {
+                container.innerHTML = cart.map(item => `
+                    <div class="flex items-center justify-between bg-slate-700/50 rounded-xl p-3">
+                        <div>
+                            <p class="font-medium text-white">${escapeHtml(item.name)}</p>
+                            <p class="text-sm text-slate-400">$${parseFloat(item.price).toFixed(2)} x ${item.qty}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold text-emerald-400">$${(parseFloat(item.price) * item.qty).toFixed(2)}</span>
+                            <button onclick="removeFromCart('${item.id}')" class="text-slate-400 hover:text-red-400 transition-colors">
+                                <i data-lucide="minus-circle" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('cart-subtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('cart-shipping').textContent = shipping > 0 ? `$${shipping.toFixed(2)}` : 'Gratis';
+            document.getElementById('cart-modal-total').textContent = `$${total.toFixed(2)}`;
+
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        async function submitOrder() {
+            const name = document.getElementById('cart-name').value.trim();
+            const phone = document.getElementById('cart-phone').value.trim();
+            const address = document.getElementById('cart-address').value.trim();
+
+            if (!name || !phone || !address) {
+                showToast('Por favor completa todos los campos requeridos', 'error');
+                return;
+            }
+
+            if (cart.length === 0) {
+                showToast('Tu carrito está vacío', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('cart-submit-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="sf-loading"></div> Enviando...';
+
+            const subtotal = getCartTotal();
+            const shipping = 1.50;
+            const total = subtotal + shipping;
+
+            // Save order to database
+            const orderData = {
+                business_id: businessData.id,
+                customer_name: name,
+                customer_phone: phone,
+                customer_address: address,
+                subtotal: subtotal,
+                shipping: shipping,
+                total: total,
+                status: 'Pendiente',
+                invoice_type: 'normal'
+            };
+
+            const { data: savedOrder, error } = await supabaseClient
+                .from('orders')
+                .insert(orderData)
+                .select()
+                .single();
+
+            if (!error && savedOrder) {
+                // Save order items
+                for (const item of cart) {
+                    await supabaseClient.from('order_items').insert({
+                        order_id: savedOrder.id,
+                        product_id: item.id,
+                        product_name: item.name,
+                        quantity: item.qty,
+                        unit_price: item.price,
+                        total_price: item.price * item.qty
+                    });
+                }
+            }
+
+            // Build WhatsApp message
+            let message = `🛒 *NUEVO PEDIDO — ${escapeHtml(businessData.name)}*\n\n`;
+            message += `📦 *Productos:*\n`;
+            cart.forEach(item => {
+                message += `• ${item.qty}x ${item.name} — $${(parseFloat(item.price) * item.qty).toFixed(2)}\n`;
+            });
+            message += `\n💰 *Subtotal:* $${subtotal.toFixed(2)}\n`;
+            message += `🚚 *Envío:* $${shipping.toFixed(2)}\n`;
+            message += `💵 *TOTAL:* $${total.toFixed(2)}\n\n`;
+            message += `👤 *Cliente:*\n`;
+            message += `Nombre: ${name}\n`;
+            message += `Teléfono: ${phone}\n`;
+            message += `Dirección: ${address}`;
+
+            const whatsapp = validateWhatsapp(businessData.whatsapp);
+            if (!whatsapp) {
+                showToast('El negocio no tiene WhatsApp configurado', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="send" class="w-5 h-5"></i> Enviar pedido por WhatsApp';
+                return;
+            }
+
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/${whatsapp}?text=${encodedMessage}`;
+
+            setTimeout(() => {
+                window.open(whatsappUrl, '_blank');
+                
+                // Reset
+                cart = [];
+                updateCartUI();
+                closeCartModal();
+                document.getElementById('cart-name').value = '';
+                document.getElementById('cart-phone').value = '';
+                document.getElementById('cart-address').value = '';
+                
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="send" class="w-5 h-5"></i> Enviar pedido por WhatsApp';
+                
+                showToast('¡Pedido enviado! Revisa tu WhatsApp.', 'success');
+            }, 1000);
+        }
+
+        // ===== UTILS =====
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function validateWhatsapp(number) {
+            if (!number) return null;
+            const cleaned = number.replace(/[^0-9+]/g, '');
+            if (cleaned.startsWith('+')) {
+                return cleaned.slice(1);
+            }
+            return cleaned;
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `sf-toast sf-toast-${type}`;
+            toast.innerHTML = `
+                <i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info'}" class="w-5 h-5"></i>
+                <span>${escapeHtml(message)}</span>
+            `;
+            document.body.appendChild(toast);
+            
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.add('sf-toast-exit');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', initBusinessPage);
+    </script>
+</body>
+</html>
