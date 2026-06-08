@@ -1,7 +1,7 @@
 // ===== SITEFLY CONFIGURATION =====
 const SUPABASE_URL = 'https://kyvcrzvpqkmfvnlqictl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dmNyenZwcWttZnZubHFpY3RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDAzMjUsImV4cCI6MjA5NTU3NjMyNX0.BppEWjs6MgNzB1KIlnBvDlUjdKaACBnwQemRXybfn14';
-var supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+var supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 var supabaseClient = supabase;
 console.log('SiteFly: Supabase conectado correctamente');
 
