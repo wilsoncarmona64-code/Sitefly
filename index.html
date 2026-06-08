@@ -1,247 +1,403 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SiteFly 2.0 - Crea tu Negocio Digital</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; background: #0f172a; color: white; }
-        .chat-container { height: calc(100vh - 200px); }
-        .message { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .option-card:hover { transform: translateY(-2px); border-color: #3b82f6; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); }
-    </style>
-</head>
-<body class="antialiased overflow-hidden">
+<script>
+    // ===== SITEFLY 2.0 CORE =====
 
-    <!-- Header -->
-    <header class="fixed top-0 w-full z-40 glass border-b border-gray-800">
-        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <i data-lucide="rocket" class="text-blue-500 w-8 h-8"></i>
-                <span class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">SiteFly 2.0</span>
-            </div>
-            <div id="auth-buttons">
-                <!-- Se inyecta dinámicamente -->
-            </div>
-        </div>
-    </header>
+    // Supabase
+    const SUPABASE_URL = 'https://kyvcrzvpqkmfvnlqictl.supabase.co';
+    const SUPABASE_ANON_KEY = 'PON_AQUI_TU_ANON_KEY_PUBLICA';
 
-    <!-- Main Chat Area -->
-    <main class="pt-20 pb-10 px-4 max-w-4xl mx-auto chat-container flex flex-col">
-        <div id="chat-history" class="flex-1 overflow-y-auto space-y-6 pr-2 mb-4">
-            <!-- Mensaje de bienvenida -->
-            <div class="message flex gap-4">
-                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
-                    <i data-lucide="bot" class="w-6 h-6"></i>
-                </div>
-                <div class="bg-gray-800 p-4 rounded-2xl rounded-tl-none max-w-[85%] border border-gray-700 shadow-lg">
-                    <p class="text-lg">¡Hola! Soy tu asistente digital de SiteFly. 🚀</p>
-                    <p class="text-gray-400 mt-2">Voy a ayudarte a crear tu negocio digital en menos de 2 minutos. Solo necesito hacerte 6 preguntas simples.</p>
-                    <button onclick="startOnboarding()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-medium transition-all flex items-center gap-2">
-                        Comenzar ahora <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
+    // Fallback de categorías y plantillas
+    const CATEGORIES = [
+        "Restaurante", "Cafetería", "Panadería", "Soda", "Barbería",
+        "Belleza", "Tienda de ropa", "Ferretería", "Taller mecánico", "Veterinaria",
+        "Gimnasio", "Turismo", "Hotel", "Profesional independiente", "Otro"
+    ];
 
-        <!-- Input Area (Oculto hasta necesario) -->
-        <div id="input-area" class="hidden glass p-4 rounded-2xl border border-gray-700">
-            <input type="text" id="user-input" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors" placeholder="Escribe tu respuesta..." />
-        </div>
-    </main>
+    const TEMPLATES = [
+        { id: "rest-modern-dark", name: "Restaurante Oscuro Moderno", category: "Restaurante" },
+        { id: "rest-classic-light", name: "Clásico Luminoso", category: "Restaurante" },
+        { id: "rest-fast-food", name: "Comida Rápida Vibrante", category: "Restaurante" },
 
-    <script src="js/config.js"></script>
-    <script>
-        lucide.createIcons();
-        
-        let currentStep = 0;
-        const steps = [
-            { question: "¿Qué tipo de negocio vas a crear?", type: "category" },
-            { question: "¿Cuál es el nombre de tu negocio?", type: "text", key: "name" },
-            { question: "Cuéntame brevemente qué haces o qué vendes.", type: "text", key: "description" },
-            { question: "¿En qué ciudad o dirección estás ubicado?", type: "text", key: "address" },
-            { question: "¿Cuál es tu número de WhatsApp para recibir pedidos?", type: "text", key: "whatsapp" },
-            { question: "Elige el estilo visual que más te guste para tu web.", type: "template" }
-        ];
+        { id: "cafe-minimal", name: "Café Minimalista", category: "Cafetería" },
+        { id: "cafe-rustic", name: "Rústico Acogedor", category: "Cafetería" },
+        { id: "cafe-urban", name: "Urbano Industrial", category: "Cafetería" },
 
-        function startOnboarding() {
-            addBotMessage(steps[0].question);
-            if(steps[0].type === 'category') showCategoryOptions();
-            currentStep = 1;
-        }
+        { id: "bakery-warm", name: "Panadería Cálida", category: "Panadería" },
+        { id: "bakery-french", name: "Estilo Francés", category: "Panadería" },
+        { id: "bakery-sweet", name: "Dulces y Pasteles", category: "Panadería" },
 
-        function addBotMessage(text) {
-            const history = document.getElementById('chat-history');
-            const div = document.createElement('div');
-            div.className = 'message flex gap-4';
-            div.innerHTML = `
-                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
-                    <i data-lucide="bot" class="w-6 h-6"></i>
-                </div>
-                <div class="bg-gray-800 p-4 rounded-2xl rounded-tl-none max-w-[85%] border border-gray-700 shadow-lg">
-                    <p>${text}</p>
-                </div>
-            `;
-            history.appendChild(div);
-            history.scrollTop = history.scrollHeight;
+        { id: "soda-tico", name: "Soda Típica", category: "Soda" },
+        { id: "soda-grill", name: "Grill & Bar", category: "Soda" },
+        { id: "soda-family", name: "Familiar Económico", category: "Soda" },
+
+        { id: "barber-vintage", name: "Barbería Vintage", category: "Barbería" },
+        { id: "barber-modern", name: "Salón Moderno", category: "Barbería" },
+        { id: "barber-luxury", name: "Lujo & Estilo", category: "Barbería" },
+
+        { id: "beauty-spa", name: "Spa & Relax", category: "Belleza" },
+        { id: "beauty-nails", name: "Uñas & Pestañas", category: "Belleza" },
+        { id: "beauty-glam", name: "Glamour Total", category: "Belleza" },
+
+        { id: "fashion-boutique", name: "Boutique Elegante", category: "Tienda de ropa" },
+        { id: "fashion-street", name: "Streetwear", category: "Tienda de ropa" },
+        { id: "fashion-kids", name: "Moda Infantil", category: "Tienda de ropa" },
+
+        { id: "hardware-pro", name: "Ferretería Pro", category: "Ferretería" },
+        { id: "hardware-home", name: "Hogar & Construcción", category: "Ferretería" },
+        { id: "hardware-tools", name: "Herramientas Expertas", category: "Ferretería" },
+
+        { id: "mechanic-auto", name: "Automotriz General", category: "Taller mecánico" },
+        { id: "mechanic-moto", name: "Motos & Racing", category: "Taller mecánico" },
+        { id: "mechanic-detail", name: "Detailing & Lavado", category: "Taller mecánico" },
+
+        { id: "vet-care", name: "Cuidado Animal", category: "Veterinaria" },
+        { id: "vet-petshop", name: "Petshop & Vet", category: "Veterinaria" },
+        { id: "vet-clinic", name: "Clínica Especializada", category: "Veterinaria" },
+
+        { id: "gym-crossfit", name: "CrossFit Box", category: "Gimnasio" },
+        { id: "gym-yoga", name: "Yoga & Pilates", category: "Gimnasio" },
+        { id: "gym-body", name: "Bodybuilding Gym", category: "Gimnasio" },
+
+        { id: "travel-adventure", name: "Aventura Extrema", category: "Turismo" },
+        { id: "travel-tours", name: "Tours Guiados", category: "Turismo" },
+        { id: "travel-eco", name: "Ecoturismo", category: "Turismo" },
+
+        { id: "hotel-boutique", name: "Hotel Boutique", category: "Hotel" },
+        { id: "hotel-resort", name: "Resort Playero", category: "Hotel" },
+        { id: "hotel-city", name: "Hotel de Ciudad", category: "Hotel" },
+
+        { id: "pro-lawyer", name: "Bufete Legal", category: "Profesional independiente" },
+        { id: "pro-doctor", name: "Consultorio Médico", category: "Profesional independiente" },
+        { id: "pro-design", name: "Estudio de Diseño", category: "Profesional independiente" },
+
+        { id: "other-generic", name: "Negocio General", category: "Otro" },
+        { id: "other-services", name: "Servicios Varios", category: "Otro" },
+        { id: "other-startup", name: "Startup Tech", category: "Otro" }
+    ];
+
+    // Utilidades
+    function sf_escapeHtml(str) {
+        return String(str ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function sf_slugify(text) {
+        return String(text ?? '')
+            .toLowerCase()
+            .trim()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '');
+    }
+
+    function sf_safeCreateIcons() {
+        if (typeof lucide !== 'undefined' && lucide && typeof lucide.createIcons === 'function') {
             lucide.createIcons();
         }
+    }
 
-        function addUserMessage(text) {
-            const history = document.getElementById('chat-history');
-            const div = document.createElement('div');
-            div.className = 'message flex gap-4 justify-end';
-            div.innerHTML = `
-                <div class="bg-blue-600 p-4 rounded-2xl rounded-tr-none max-w-[85%] shadow-lg">
-                    <p>${text}</p>
-                </div>
-                <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center shrink-0">
-                    <i data-lucide="user" class="w-6 h-6"></i>
-                </div>
-            `;
-            history.appendChild(div);
-            history.scrollTop = history.scrollHeight;
-            lucide.createIcons();
+    function sf_showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `fixed top-5 right-5 px-6 py-3 rounded-lg shadow-lg text-white font-medium transform transition-all duration-300 translate-y-0 opacity-100 z-50 ${
+            type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-blue-600'
+        }`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.transform = 'translateY(-100%)';
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Supabase seguro
+    let sf_supabaseClient = null;
+    try {
+        if (window.supabase && typeof window.supabase.createClient === 'function') {
+            sf_supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            window.supabaseClient = sf_supabaseClient;
         }
+    } catch (error) {
+        console.error('Supabase no pudo inicializarse:', error);
+    }
 
-        function showCategoryOptions() {
-            const history = document.getElementById('chat-history');
-            const div = document.createElement('div');
-            div.className = 'message flex gap-4';
-            
-            let optionsHtml = '<div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4">';
-            window.sf_state.config.categories.forEach(cat => {
-                optionsHtml += `<button onclick="selectCategory('${cat}')" class="option-card bg-gray-800 hover:bg-gray-700 border border-gray-700 p-3 rounded-xl text-sm transition-all text-left">${cat}</button>`;
-            });
-            optionsHtml += '</div>';
+    // Estado global
+    window.sf_state = window.sf_state || {};
+    window.sf_state.supabase = sf_supabaseClient;
+    window.sf_state.user = null;
+    window.sf_state.business = null;
+    window.sf_state.onboarding = window.sf_state.onboarding || {
+        step: 0,
+        answers: {},
+        sessionToken: null
+    };
+    window.sf_state.config = {
+        categories: CATEGORIES,
+        templates: TEMPLATES
+    };
 
-            div.innerHTML = `
-                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
-                    <i data-lucide="bot" class="w-6 h-6"></i>
-                </div>
-                <div class="bg-gray-800 p-4 rounded-2xl rounded-tl-none max-w-[95%] border border-gray-700 shadow-lg w-full">
-                    <p>Selecciona una categoría:</p>
-                    ${optionsHtml}
-                </div>
-            `;
-            history.appendChild(div);
-            history.scrollTop = history.scrollHeight;
-            lucide.createIcons();
-        }
+    window.sf_utils = window.sf_utils || {
+        generateSlug: sf_slugify,
+        showToast: sf_showToast
+    };
 
-        function selectCategory(cat) {
-            addUserMessage(cat);
-            window.sf_state.onboarding.answers.category = cat;
-            nextStep();
-        }
+    const sf_state = window.sf_state;
 
-        function showTemplateOptions(category) {
-            const history = document.getElementById('chat-history');
-            const div = document.createElement('div');
-            div.className = 'message flex gap-4';
-            
-            const filteredTemplates = window.sf_state.config.templates.filter(t => t.category === category || t.category === 'Otro');
-            // Mostrar solo 6 opciones aleatorias para no saturar, o todas si son pocas
-            const displayTemplates = filteredTemplates.sort(() => 0.5 - Math.random()).slice(0, 6);
+    // ===== CHAT FLOW =====
+    let currentStep = 0;
 
-            let optionsHtml = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">';
-            displayTemplates.forEach(t => {
-                optionsHtml += `
-                    <button onclick="selectTemplate('${t.id}')" class="option-card group bg-gray-800 hover:bg-gray-700 border border-gray-700 p-4 rounded-xl text-left transition-all flex items-center gap-3">
-                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
-                            ${t.name.charAt(0)}
-                        </div>
-                        <div>
-                            <div class="font-bold text-white group-hover:text-blue-400">${t.name}</div>
-                            <div class="text-xs text-gray-400">Plantilla ${t.category}</div>
-                        </div>
-                    </button>
-                `;
-            });
-            optionsHtml += '</div><p class="text-xs text-gray-500 mt-2">* Puedes cambiar esto después en el panel.</p>';
+    const steps = [
+        { question: "¿Qué tipo de negocio vas a crear?", type: "category" },
+        { question: "¿Cuál es el nombre de tu negocio?", type: "text", key: "name" },
+        { question: "Cuéntame brevemente qué haces o qué vendes.", type: "text", key: "description" },
+        { question: "¿En qué ciudad o dirección estás ubicado?", type: "text", key: "address" },
+        { question: "¿Cuál es tu número de WhatsApp para recibir pedidos?", type: "text", key: "whatsapp" },
+        { question: "Elige el estilo visual que más te guste para tu web.", type: "template" }
+    ];
 
-            div.innerHTML = `
-                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
-                    <i data-lucide="bot" class="w-6 h-6"></i>
-                </div>
-                <div class="bg-gray-800 p-4 rounded-2xl rounded-tl-none max-w-[95%] border border-gray-700 shadow-lg w-full">
-                    <p>¡Excelente elección! Para "${category}", estas son algunas plantillas recomendadas:</p>
-                    ${optionsHtml}
-                </div>
-            `;
-            history.appendChild(div);
-            history.scrollTop = history.scrollHeight;
-            lucide.createIcons();
-        }
+    document.addEventListener('DOMContentLoaded', () => {
+        sf_safeCreateIcons();
 
-        function selectTemplate(id) {
-            const template = window.sf_state.config.templates.find(t => t.id === id);
-            addUserMessage(template.name);
-            window.sf_state.onboarding.answers.template = id;
-            finishOnboarding();
-        }
-
-        function nextStep() {
-            if (currentStep >= steps.length) return;
-            
-            const step = steps[currentStep];
-            setTimeout(() => {
-                addBotMessage(step.question);
-                if (step.type === 'template') {
-                    showTemplateOptions(window.sf_state.onboarding.answers.category);
-                } else if (step.type === 'text') {
-                    document.getElementById('input-area').classList.remove('hidden');
-                    document.getElementById('user-input').focus();
-                }
-                currentStep++;
-            }, 600);
-        }
-
-        function finishOnboarding() {
-            addBotMessage("✨ ¡Perfecto! Estoy generando tu sitio web con IA...");
-            
-            // Simulación de proceso de IA
-            setTimeout(() => {
-                // Guardar en DB (Simulado para demo, usar supabase en prod)
-                const businessName = window.sf_state.onboarding.answers.name;
-                const slug = window.sf_utils.generateSlug(businessName);
-                
-                // Redirigir al dashboard
-                window.sf_utils.showToast("Negocio creado con éxito", "success");
-                setTimeout(() => {
-                    window.location.href = `admin.html?slug=${slug}`;
-                }, 1500);
-            }, 2000);
-        }
-
-        // Manejo del input de texto
-        document.getElementById('user-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter' && this.value.trim() !== '') {
-                const val = this.value.trim();
-                addUserMessage(val);
-                this.value = '';
-                
-                // Guardar respuesta
-                const stepKey = steps[currentStep-1].key;
-                if(stepKey) window.sf_state.onboarding.answers[stepKey] = val;
-                
-                document.getElementById('input-area').classList.add('hidden');
-                nextStep();
-            }
-        });
-
-        // Auth Check Simple
         const authContainer = document.getElementById('auth-buttons');
-        // Aquí iría la lógica real de auth de Supabase
-        authContainer.innerHTML = `
-            <button onclick="alert('Funcionalidad de Login en desarrollo')" class="text-sm text-gray-300 hover:text-white mr-4">Iniciar Sesión</button>
+        if (authContainer) {
+            authContainer.innerHTML = `
+                <button onclick="alert('Funcionalidad de Login en desarrollo')" class="text-sm text-gray-300 hover:text-white mr-4">
+                    Iniciar Sesión
+                </button>
+            `;
+        }
+
+        const userInput = document.getElementById('user-input');
+        if (userInput) {
+            userInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter' && this.value.trim() !== '') {
+                    const val = this.value.trim();
+                    addUserMessage(val);
+                    this.value = '';
+
+                    const stepKey = steps[currentStep - 1]?.key;
+                    if (stepKey) window.sf_state.onboarding.answers[stepKey] = val;
+
+                    document.getElementById('input-area')?.classList.add('hidden');
+                    nextStep();
+                }
+            });
+        }
+    });
+
+    function startOnboarding() {
+        currentStep = 1;
+        sf_state.onboarding.step = currentStep;
+        sf_state.onboarding.answers = sf_state.onboarding.answers || {};
+
+        addBotMessage(steps[0].question);
+        if (steps[0].type === 'category') showCategoryOptions();
+    }
+
+    function addBotMessage(text) {
+        const history = document.getElementById('chat-history');
+        if (!history) return;
+
+        const div = document.createElement('div');
+        div.className = 'message flex gap-4';
+        div.innerHTML = `
+            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                <i data-lucide="bot" class="w-6 h-6"></i>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-2xl rounded-tl-none max-w-[85%] border border-gray-700 shadow-lg">
+                <p>${sf_escapeHtml(text)}</p>
+            </div>
         `;
-    </script>
-</body>
-</html>
+        history.appendChild(div);
+        history.scrollTop = history.scrollHeight;
+        sf_safeCreateIcons();
+    }
+
+    function addUserMessage(text) {
+        const history = document.getElementById('chat-history');
+        if (!history) return;
+
+        const div = document.createElement('div');
+        div.className = 'message flex gap-4 justify-end';
+        div.innerHTML = `
+            <div class="bg-blue-600 p-4 rounded-2xl rounded-tr-none max-w-[85%] shadow-lg">
+                <p>${sf_escapeHtml(text)}</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center shrink-0">
+                <i data-lucide="user" class="w-6 h-6"></i>
+            </div>
+        `;
+        history.appendChild(div);
+        history.scrollTop = history.scrollHeight;
+        sf_safeCreateIcons();
+    }
+
+    function showCategoryOptions() {
+        const history = document.getElementById('chat-history');
+        if (!history) return;
+
+        const div = document.createElement('div');
+        div.className = 'message flex gap-4';
+
+        let optionsHtml = '<div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4">';
+        sf_state.config.categories.forEach(cat => {
+            optionsHtml += `<button type="button" onclick="selectCategory('${sf_escapeHtml(cat)}')" class="option-card bg-gray-800 hover:bg-gray-700 border border-gray-700 p-3 rounded-xl text-sm transition-all text-left">${sf_escapeHtml(cat)}</button>`;
+        });
+        optionsHtml += '</div>';
+
+        div.innerHTML = `
+            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                <i data-lucide="bot" class="w-6 h-6"></i>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-2xl rounded-tl-none max-w-[95%] border border-gray-700 shadow-lg w-full">
+                <p>Selecciona una categoría:</p>
+                ${optionsHtml}
+            </div>
+        `;
+        history.appendChild(div);
+        history.scrollTop = history.scrollHeight;
+        sf_safeCreateIcons();
+    }
+
+    function selectCategory(cat) {
+        addUserMessage(cat);
+        sf_state.onboarding.answers.category = cat;
+        nextStep();
+    }
+
+    function showTemplateOptions(category) {
+        const history = document.getElementById('chat-history');
+        if (!history) return;
+
+        const div = document.createElement('div');
+        div.className = 'message flex gap-4';
+
+        const filteredTemplates = sf_state.config.templates.filter(t => t.category === category || t.category === 'Otro');
+        const displayTemplates = (filteredTemplates.length ? filteredTemplates : sf_state.config.templates)
+            .slice()
+            .sort(() => 0.5 - Math.random())
+            .slice(0, 6);
+
+        let optionsHtml = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">';
+        displayTemplates.forEach(t => {
+            optionsHtml += `
+                <button type="button" onclick="selectTemplate('${sf_escapeHtml(t.id)}')" class="option-card group bg-gray-800 hover:bg-gray-700 border border-gray-700 p-4 rounded-xl text-left transition-all flex items-center gap-3">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
+                        ${sf_escapeHtml(t.name.charAt(0))}
+                    </div>
+                    <div>
+                        <div class="font-bold text-white group-hover:text-blue-400">${sf_escapeHtml(t.name)}</div>
+                        <div class="text-xs text-gray-400">Plantilla ${sf_escapeHtml(t.category)}</div>
+                    </div>
+                </button>
+            `;
+        });
+        optionsHtml += '</div><p class="text-xs text-gray-500 mt-2">* Puedes cambiar esto después en el panel.</p>';
+
+        div.innerHTML = `
+            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                <i data-lucide="bot" class="w-6 h-6"></i>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-2xl rounded-tl-none max-w-[95%] border border-gray-700 shadow-lg w-full">
+                <p>¡Excelente elección! Para "${sf_escapeHtml(category)}", estas son algunas plantillas recomendadas:</p>
+                ${optionsHtml}
+            </div>
+        `;
+        history.appendChild(div);
+        history.scrollTop = history.scrollHeight;
+        sf_safeCreateIcons();
+    }
+
+    function selectTemplate(id) {
+        const template = sf_state.config.templates.find(t => t.id === id);
+        if (!template) return;
+
+        addUserMessage(template.name);
+        sf_state.onboarding.answers.template = id;
+        finishOnboarding();
+    }
+
+    function nextStep() {
+        if (currentStep >= steps.length) return;
+
+        const step = steps[currentStep];
+        setTimeout(() => {
+            addBotMessage(step.question);
+
+            if (step.type === 'template') {
+                showTemplateOptions(sf_state.onboarding.answers.category);
+            } else if (step.type === 'text') {
+                const inputArea = document.getElementById('input-area');
+                const input = document.getElementById('user-input');
+                if (inputArea) inputArea.classList.remove('hidden');
+                if (input) input.focus();
+            }
+
+            currentStep++;
+            sf_state.onboarding.step = currentStep;
+        }, 600);
+    }
+
+    async function sf_trySaveBusiness(data) {
+        const client = window.supabaseClient;
+        if (!client || !client.from) return null;
+
+        try {
+            const payload = {
+                name: data.name,
+                category: data.category,
+                description: data.description,
+                address: data.address,
+                whatsapp: data.whatsapp,
+                slug: data.slug,
+                status: 'active',
+                template_id: data.template_id
+            };
+
+            const { data: saved, error } = await client
+                .from('businesses')
+                .insert(payload)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return saved;
+        } catch (err) {
+            console.warn('No se pudo guardar en Supabase. Se continúa en modo demo.', err);
+            return null;
+        }
+    }
+
+    async function finishOnboarding() {
+        addBotMessage('✨ ¡Perfecto! Estoy generando tu sitio web con IA...');
+
+        setTimeout(async () => {
+            const businessName = sf_state.onboarding.answers.name || 'Mi Negocio';
+            const slug = window.sf_utils.generateSlug(businessName);
+
+            const data = {
+                name: businessName,
+                category: sf_state.onboarding.answers.category || 'Otro',
+                description: sf_state.onboarding.answers.description || '',
+                address: sf_state.onboarding.answers.address || '',
+                whatsapp: sf_state.onboarding.answers.whatsapp || '',
+                slug,
+                template_id: sf_state.onboarding.answers.template || 'other-generic'
+            };
+
+            sf_state.business = data;
+
+            await sf_trySaveBusiness(data);
+
+            window.sf_utils.showToast('Negocio creado con éxito', 'success');
+
+            setTimeout(() => {
+                window.location.href = `admin.html?slug=${encodeURIComponent(slug)}`;
+            }, 1500);
+        }, 2000);
+    }
+</script>
