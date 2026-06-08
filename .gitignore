@@ -1,3 +1,1 @@
-(js/config.js is a source file, so no need to ignore it)
-
-Nothing to output.
+Nothing needs to be added to .gitignore since the changes only include HTML and JavaScript source files (admin.html, js/admin.js, js/config.js, js/negocio.js) without any build artifacts, dependencies, or temporary files.
