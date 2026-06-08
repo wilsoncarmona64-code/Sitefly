@@ -1,14 +1,16 @@
 function sf_initAdmin() {
     document.getElementById('sf-admin-name').value = sf_state.userData.name;
     document.getElementById('sf-admin-desc').value = sf_state.userData.description;
-    document.getElementById('sf-admin-location').value = sf_state.userData.location;
+    // Fixed: use city instead of location
+    document.getElementById('sf-admin-city').value = sf_state.userData.city || sf_state.userData.location;
     document.getElementById('sf-admin-whatsapp').value = sf_state.userData.whatsapp;
-    document.getElementById('sf-admin-hours').value = sf_state.userData.hours;
-
+    // Fixed: use schedule instead of hours
+    document.getElementById('sf-admin-schedule').value = sf_state.userData.schedule || sf_state.userData.hours;
+    
     const domain = (sf_state.userData.name || 'mi-negocio').toLowerCase().replace(/\s+/g, '-');
     document.getElementById('sf-domain-display').textContent = domain + '.sitefly.app';
-    document.getElementById('sf-seo-display').textContent = `Optimizado para "${sf_state.userData.category} en ${sf_state.userData.location}"`;
-
+    document.getElementById('sf-seo-display').textContent = `Optimizado para "${sf_state.userData.category} en ${sf_state.userData.city || sf_state.userData.location}"`;
+    
     sf_renderProducts();
     sf_renderOrders();
     sf_switchAdminTab('negocio');
@@ -32,9 +34,13 @@ function sf_switchAdminTab(tab) {
 async function sf_updateBusiness() {
     sf_state.userData.name = document.getElementById('sf-admin-name').value;
     sf_state.userData.description = document.getElementById('sf-admin-desc').value;
-    sf_state.userData.location = document.getElementById('sf-admin-location').value;
+    // Fixed: use city instead of location
+    sf_state.userData.city = document.getElementById('sf-admin-city').value;
+    sf_state.userData.location = sf_state.userData.city; // Keep for backwards compatibility
     sf_state.userData.whatsapp = document.getElementById('sf-admin-whatsapp').value;
-    sf_state.userData.hours = document.getElementById('sf-admin-hours').value;
+    // Fixed: use schedule instead of hours
+    sf_state.userData.schedule = document.getElementById('sf-admin-schedule').value;
+    sf_state.userData.hours = sf_state.userData.schedule; // Keep for backwards compatibility
 
     await sf_saveBusiness();
 }

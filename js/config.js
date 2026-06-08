@@ -1,8 +1,10 @@
 // ===== SITEFLY CONFIGURATION =====
 const SUPABASE_URL = 'https://kyvcrzvpqkmfvnlqictl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dmNyenZwcWttZnZubHFpY3RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDAzMjUsImV4cCI6MjA5NTU3NjMyNX0.BppEWjs6MgNzB1KIlnBvDlUjdKaACBnwQemRXybfn14';
-var supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-var supabaseClient = supabase;
+
+// Initialize Supabase client correctly
+const supabaseClient = window.sf_state?.supabase || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = supabaseClient; // Alias for compatibility
 console.log('SiteFly: Supabase conectado correctamente');
 
 // ===== PRICING PLANS =====
@@ -26,11 +28,14 @@ const SF_PRICING = {
 // ===== STATE =====
 const sf_state = {
     view: 'login', chatStep: 0, userId: null, businessId: null,
-    userData: { category: '', name: '', description: '', location: '', whatsapp: '', hours: 'Lun - Dom: 8:00 AM - 10:00 PM', logo: '', brandColor: '#6366f1' },
+    userData: { category: '', name: '', description: '', location: '', city: '', whatsapp: '', schedule: 'Lun - Dom: 8:00 AM - 10:00 PM', hours: 'Lun - Dom: 8:00 AM - 10:00 PM', logo: '', brandColor: '#6366f1' },
     products: [], cart: [], orders: [], adminTab: 'negocio', currentTemplate: 'Midnight',
     plan: 'free', planExpiresAt: null, session: null,
     coupons: [], pageViews: [], analytics: { today: 0, week: 0, conversion: 0 }
 };
+
+// Hacer sf_state accesible globalmente
+window.sf_state = sf_state;
 
 // ===== POLLING FOR NEW ORDERS =====
 let sf_orderPollingInterval = null;
