@@ -1,65 +1,145 @@
 // ===== SITEFLY CONFIGURATION =====
+
 // Credenciales de Supabase
 const SUPABASE_URL = 'https://kyvcrzvpqkmfvnlqictl.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dmNyenZwcWttZnZubHFpY3RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDAzMjUsImV4cCI6MjA5NTU3NjMyNX0.BppEWjs6MgNzB1KIlnBvDlUjdKaACBnwQemRXybfn14';
+const SUPABASE_ANON_KEY =
+  'TU_SUPABASE_ANON_KEY';
 
-// Crear cliente de Supabase de forma segura
-// Si el CDN ya expuso 'supabase', lo usamos; si no, lo creamos desde cero.
+// Inicialización segura de Supabase
 let supabaseClient;
+
 try {
-    if (typeof supabase !== 'undefined' && supabase.createClient) {
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log('SiteFly: Usando cliente Supabase del CDN');
+    if (
+        typeof supabase !== 'undefined' &&
+        supabase.createClient
+    ) {
+        supabaseClient = supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY
+        );
+
+        console.log('SiteFly: Usando cliente Supabase');
     } else {
-        // Si por algún motivo supabase no existe, lo creamos manualmente
-        console.warn('SiteFly: supabase no definido, creando cliente manual');
-        supabaseClient = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        throw new Error('Supabase SDK no cargado');
     }
+
     window.supabase = supabaseClient;
+
     console.log('SiteFly: Supabase conectado correctamente');
 } catch (err) {
-    console.error('SiteFly: Error fatal inicializando Supabase', err);
-    // Asignar un mock para que no rompa la app pero muestre error claro
+    console.error(
+        'SiteFly: Error fatal inicializando Supabase',
+        err
+    );
+
+    // Mock defensivo para evitar que la app explote
     window.supabase = {
         auth: {
-            signInWithOtp: () => Promise.reject(new Error('Supabase no disponible. Revisa la consola.'))
+            signInWithOtp: () =>
+                Promise.reject(
+                    new Error(
+                        'Supabase no disponible. Revisa la consola.'
+                    )
+                )
         },
-        from: () => ({ select: () => Promise.reject(new Error('Supabase no disponible')) })
+
+        from: () => ({
+            select: () =>
+                Promise.reject(
+                    new Error('Supabase no disponible')
+                ),
+            insert: () =>
+                Promise.reject(
+                    new Error('Supabase no disponible')
+                ),
+            update: () =>
+                Promise.reject(
+                    new Error('Supabase no disponible')
+                ),
+            delete: () =>
+                Promise.reject(
+                    new Error('Supabase no disponible')
+                )
+        })
     };
 }
 
 // ===== PRICING PLANS =====
+
 const SF_PRICING = {
     FREE: {
         name: 'Gratuito',
         price: 0,
-        features: ['Hasta 5 productos', 'Pedidos por WhatsApp', 'Plantilla básica', 'SEO básico'],
+        features: [
+            'Hasta 5 productos',
+            'Pedidos por WhatsApp',
+            'Plantilla básica',
+            'SEO básico'
+        ],
         limit: 5,
         recommended: false
     },
+
     PRO: {
         name: 'Pro',
         price: 9,
-        features: ['Productos ilimitados', 'Pedidos ilimitados', 'Plantillas premium', 'SEO avanzado', 'Soporte prioritario', 'Sin comisión'],
+        features: [
+            'Productos ilimitados',
+            'Pedidos ilimitados',
+            'Plantillas premium',
+            'SEO avanzado',
+            'Soporte prioritario',
+            'Sin comisión'
+        ],
         limit: Infinity,
         recommended: true
     }
 };
 
 // ===== ESTADO GLOBAL =====
+
 const sf_state = {
-    view: 'login', chatStep: 0, userId: null, businessId: null,
+    view: 'login',
+    chatStep: 0,
+    userId: null,
+    businessId: null,
+
     userData: {
-        category: '', name: '', description: '', location: '', city: '',
-        whatsapp: '', hours: 'Lun - Dom: 8:00 AM - 10:00 PM',
-        logo: '', brandColor: '#6366f1'
+        category: '',
+        name: '',
+        description: '',
+        location: '',
+        city: '',
+        whatsapp: '',
+        hours: 'Lun - Dom: 8:00 AM - 10:00 PM',
+        logo: '',
+        brandColor: '#6366f1'
     },
-    products: [], cart: [], orders: [], adminTab: 'negocio', currentTemplate: 'Midnight',
-    plan: 'free', planExpiresAt: null, session: null,
-    coupons: [], pageViews: [], analytics: { today: 0, week: 0, conversion: 0 }
+
+    products: [],
+    cart: [],
+    orders: [],
+
+    adminTab: 'negocio',
+
+    currentTemplate: 'Midnight',
+
+    plan: 'free',
+    planExpiresAt: null,
+
+    session: null,
+
+    coupons: [],
+    pageViews: [],
+
+    analytics: {
+        today: 0,
+        week: 0,
+        conversion: 0
+    }
 };
 
-// Hacer accesible globalmente
+// Exponer estado global
 window.sf_state = sf_state;
 
 // ===== POLLING FOR NEW ORDERS =====
