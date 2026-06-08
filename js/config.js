@@ -157,5 +157,3 @@ window.sf_utils = window.sf_utils || {
         }, 3000);
     }
 };
-
-console.log("✅ SiteFly 2.0 Core Initialized");
