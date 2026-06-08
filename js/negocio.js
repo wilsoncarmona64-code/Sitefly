@@ -4,15 +4,15 @@ let products = [];
 let cart = [];
 const whatsappNumber = '50688888888'; // Default fallback
 
-// Get business ID from URL
-function getBusinessId() {
+// Get business slug from URL (fixed: was using 'id' but system uses 'slug')
+function getBusinessSlug() {
     const params = new URLSearchParams(window.location.search);
-    return params.get('id');
+    return params.get('slug') || params.get('id');
 }
 
 // Initialize page
 async function initBusinessPage() {
-    const businessId = getBusinessId();
+    const businessId = getBusinessSlug();
     
     if (!businessId) {
         showError();
@@ -20,12 +20,23 @@ async function initBusinessPage() {
     }
 
     try {
-        // Load business data
-        const { data: business, error: bizError } = await supabaseClient
+        // Load business data - try slug first, then id
+        let { data: business, error: bizError } = await supabaseClient
             .from('businesses')
             .select('*')
-            .eq('id', businessId)
+            .eq('slug', businessId)
             .single();
+
+        // If not found by slug, try by id
+        if (bizError || !business) {
+            const result = await supabaseClient
+                .from('businesses')
+                .select('*')
+                .eq('id', businessId)
+                .single();
+            business = result.data;
+            bizError = result.error;
+        }
 
         if (bizError || !business) {
             console.error('Error loading business:', bizError);
@@ -74,10 +85,10 @@ function renderPage() {
     document.getElementById('hero-name').textContent = businessData.name || 'Mi Negocio';
     document.getElementById('hero-description').textContent = businessData.description || '';
     
-    // Info section
+    // Info section - fixed: use city/schedule instead of location/hours
     document.getElementById('info-description').textContent = businessData.description || '';
-    document.getElementById('info-location').textContent = businessData.location || 'Ubicación no especificada';
-    document.getElementById('info-hours').textContent = businessData.hours || 'Horario no especificado';
+    document.getElementById('info-location').textContent = businessData.city || businessData.location || 'Ubicación no especificada';
+    document.getElementById('info-hours').textContent = businessData.schedule || businessData.hours || 'Horario no especificado';
     
     // Benefits (using default based on category)
     const categoryContent = sf_ai_content[businessData.category] || sf_ai_content['default'];
