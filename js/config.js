@@ -1,40 +1,145 @@
 // ===== SITEFLY CONFIGURATION =====
-const SUPABASE_URL = 'https://kyvcrzvpqkmfvnlqictl.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dmNyenZwcWttZnZubHFpY3RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDAzMjUsImV4cCI6MjA5NTU3NjMyNX0.BppEWjs6MgNzB1KIlnBvDlUjdKaACBnwQemRXybfn14';
 
-// Initialize Supabase client correctly
-const supabaseClient = window.sf_state?.supabase || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const supabase = supabaseClient; // Alias for compatibility
-console.log('SiteFly: Supabase conectado correctamente');
+// Credenciales de Supabase
+const SUPABASE_URL = 'https://kyvcrzvpqkmfvnlqictl.supabase.co';
+const SUPABASE_ANON_KEY =
+  'TU_SUPABASE_ANON_KEY';
+
+// Inicialización segura de Supabase
+let supabaseClient;
+
+try {
+    if (
+        typeof supabase !== 'undefined' &&
+        supabase.createClient
+    ) {
+        supabaseClient = supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY
+        );
+
+        console.log('SiteFly: Usando cliente Supabase');
+    } else {
+        throw new Error('Supabase SDK no cargado');
+    }
+
+    window.supabase = supabaseClient;
+
+    console.log('SiteFly: Supabase conectado correctamente');
+} catch (err) {
+    console.error(
+        'SiteFly: Error fatal inicializando Supabase',
+        err
+    );
+
+    // Mock defensivo para evitar que la app explote
+    window.supabase = {
+        auth: {
+            signInWithOtp: () =>
+                Promise.reject(
+                    new Error(
+                        'Supabase no disponible. Revisa la consola.'
+                    )
+                )
+        },
+
+        from: () => ({
+            select: () =>
+                Promise.reject(
+                    new Error('Supabase no disponible')
+                ),
+            insert: () =>
+                Promise.reject(
+                    new Error('Supabase no disponible')
+                ),
+            update: () =>
+                Promise.reject(
+                    new Error('Supabase no disponible')
+                ),
+            delete: () =>
+                Promise.reject(
+                    new Error('Supabase no disponible')
+                )
+        })
+    };
+}
 
 // ===== PRICING PLANS =====
+
 const SF_PRICING = {
     FREE: {
         name: 'Gratuito',
         price: 0,
-        features: ['Hasta 5 productos', 'Pedidos por WhatsApp', 'Plantilla básica', 'SEO básico'],
+        features: [
+            'Hasta 5 productos',
+            'Pedidos por WhatsApp',
+            'Plantilla básica',
+            'SEO básico'
+        ],
         limit: 5,
         recommended: false
     },
+
     PRO: {
         name: 'Pro',
         price: 9,
-        features: ['Productos ilimitados', 'Pedidos ilimitados', 'Plantillas premium', 'SEO avanzado', 'Soporte prioritario', 'Sin comisión'],
+        features: [
+            'Productos ilimitados',
+            'Pedidos ilimitados',
+            'Plantillas premium',
+            'SEO avanzado',
+            'Soporte prioritario',
+            'Sin comisión'
+        ],
         limit: Infinity,
         recommended: true
     }
 };
 
-// ===== STATE =====
+// ===== ESTADO GLOBAL =====
+
 const sf_state = {
-    view: 'login', chatStep: 0, userId: null, businessId: null,
-    userData: { category: '', name: '', description: '', location: '', city: '', whatsapp: '', schedule: 'Lun - Dom: 8:00 AM - 10:00 PM', hours: 'Lun - Dom: 8:00 AM - 10:00 PM', logo: '', brandColor: '#6366f1' },
-    products: [], cart: [], orders: [], adminTab: 'negocio', currentTemplate: 'Midnight',
-    plan: 'free', planExpiresAt: null, session: null,
-    coupons: [], pageViews: [], analytics: { today: 0, week: 0, conversion: 0 }
+    view: 'login',
+    chatStep: 0,
+    userId: null,
+    businessId: null,
+
+    userData: {
+        category: '',
+        name: '',
+        description: '',
+        location: '',
+        city: '',
+        whatsapp: '',
+        hours: 'Lun - Dom: 8:00 AM - 10:00 PM',
+        logo: '',
+        brandColor: '#6366f1'
+    },
+
+    products: [],
+    cart: [],
+    orders: [],
+
+    adminTab: 'negocio',
+
+    currentTemplate: 'Midnight',
+
+    plan: 'free',
+    planExpiresAt: null,
+
+    session: null,
+
+    coupons: [],
+    pageViews: [],
+
+    analytics: {
+        today: 0,
+        week: 0,
+        conversion: 0
+    }
 };
 
-// Hacer sf_state accesible globalmente
+// Exponer estado global
 window.sf_state = sf_state;
 
 // ===== POLLING FOR NEW ORDERS =====
@@ -92,6 +197,3 @@ allCategories.forEach(cat => {
         };
     }
 });
-
-// Hacer sf_state accesible globalmente
-window.sf_state = sf_state;
