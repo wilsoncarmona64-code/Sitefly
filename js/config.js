@@ -3,17 +3,45 @@
 // Credenciales de Supabase
 const SUPABASE_URL = 'https://kyvcrzvpqkmfvnlqictl.supabase.co';
 const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dmNyenZwcWttZnZubHFpY3RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDAzMjUsImV4cCI6MjA5NTU3NjMyNX0.BppEWjs6MgNzB1KIlnBvDlUjdKaACBnwQemRXybfn14';
+  'TU_SUPABASE_ANON_KEY_AQUI';
 
 // Inicializar Supabase de forma segura
-let supabase;
-if (typeof window !== 'undefined') {
-    if (window.supabase) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabaseClient = null;
+
+try {
+    if (
+        typeof window !== 'undefined' &&
+        window.supabase &&
+        typeof window.supabase.createClient === 'function'
+    ) {
+        supabaseClient = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY
+        );
+
+        console.log('✅ Supabase conectado correctamente');
     } else {
-        console.error("Error: El CDN de Supabase no se ha cargado.");
+        console.error('❌ El CDN de Supabase no se cargó.');
     }
+} catch (error) {
+    console.error('❌ Error inicializando Supabase:', error);
 }
+
+// Estado global
+window.sf_state = {
+    supabase: supabaseClient,
+    user: null,
+    business: null,
+    onboarding: {
+        step: 0,
+        answers: {},
+        sessionToken: null
+    },
+    config: {
+        categories: CATEGORIES,
+        templates: TEMPLATES
+    }
+};
 
 // 2. Definición de Categorías y Plantillas (SiteFly 2.0)
 const CATEGORIES = [
