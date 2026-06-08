@@ -5,195 +5,123 @@ const SUPABASE_URL = 'https://kyvcrzvpqkmfvnlqictl.supabase.co';
 const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dmNyenZwcWttZnZubHFpY3RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDAzMjUsImV4cCI6MjA5NTU3NjMyNX0.BppEWjs6MgNzB1KIlnBvDlUjdKaACBnwQemRXybfn14';
 
-// Inicialización segura de Supabase
-let supabaseClient;
-
-try {
-    if (
-        typeof supabase !== 'undefined' &&
-        supabase.createClient
-    ) {
-        supabaseClient = supabase.createClient(
-            SUPABASE_URL,
-            SUPABASE_ANON_KEY
-        );
-
-        console.log('SiteFly: Usando cliente Supabase');
+// Inicializar Supabase de forma segura
+let supabase;
+if (typeof window !== 'undefined') {
+    if (window.supabase) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     } else {
-        throw new Error('Supabase SDK no cargado');
+        console.error("Error: El CDN de Supabase no se ha cargado.");
     }
-
-    window.supabase = supabaseClient;
-
-    console.log('SiteFly: Supabase conectado correctamente');
-} catch (err) {
-    console.error(
-        'SiteFly: Error fatal inicializando Supabase',
-        err
-    );
-
-    // Mock defensivo para evitar que la app explote
-    window.supabase = {
-        auth: {
-            signInWithOtp: () =>
-                Promise.reject(
-                    new Error(
-                        'Supabase no disponible. Revisa la consola.'
-                    )
-                )
-        },
-
-        from: () => ({
-            select: () =>
-                Promise.reject(
-                    new Error('Supabase no disponible')
-                ),
-            insert: () =>
-                Promise.reject(
-                    new Error('Supabase no disponible')
-                ),
-            update: () =>
-                Promise.reject(
-                    new Error('Supabase no disponible')
-                ),
-            delete: () =>
-                Promise.reject(
-                    new Error('Supabase no disponible')
-                )
-        })
-    };
 }
 
-// ===== PRICING PLANS =====
+// 2. Definición de Categorías y Plantillas (SiteFly 2.0)
+const CATEGORIES = [
+    "Restaurante", "Cafetería", "Panadería", "Soda", "Barbería", 
+    "Belleza", "Tienda de ropa", "Ferretería", "Taller mecánico", "Veterinaria", 
+    "Gimnasio", "Turismo", "Hotel", "Profesional independiente", "Otro"
+];
 
-const SF_PRICING = {
-    FREE: {
-        name: 'Gratuito',
-        price: 0,
-        features: [
-            'Hasta 5 productos',
-            'Pedidos por WhatsApp',
-            'Plantilla básica',
-            'SEO básico'
-        ],
-        limit: 5,
-        recommended: false
+const TEMPLATES = [
+    // Restaurante (3)
+    { id: "rest-modern-dark", name: "Restaurante Oscuro Moderno", category: "Restaurante" },
+    { id: "rest-classic-light", name: "Clásico Luminoso", category: "Restaurante" },
+    { id: "rest-fast-food", name: "Comida Rápida Vibrante", category: "Restaurante" },
+    // Cafetería (3)
+    { id: "cafe-minimal", name: "Café Minimalista", category: "Cafetería" },
+    { id: "cafe-rustic", name: "Rústico Acogedor", category: "Cafetería" },
+    { id: "cafe-urban", name: "Urbano Industrial", category: "Cafetería" },
+    // Panadería (3)
+    { id: "bakery-warm", name: "Panadería Cálida", category: "Panadería" },
+    { id: "bakery-french", name: "Estilo Francés", category: "Panadería" },
+    { id: "bakery-sweet", name: "Dulces y Pasteles", category: "Panadería" },
+    // Soda (3)
+    { id: "soda-tico", name: "Soda Típica", category: "Soda" },
+    { id: "soda-grill", name: "Grill & Bar", category: "Soda" },
+    { id: "soda-family", name: "Familiar Económico", category: "Soda" },
+    // Barbería (3)
+    { id: "barber-vintage", name: "Barbería Vintage", category: "Barbería" },
+    { id: "barber-modern", name: "Salón Moderno", category: "Barbería" },
+    { id: "barber-luxury", name: "Lujo & Estilo", category: "Barbería" },
+    // Belleza (3)
+    { id: "beauty-spa", name: "Spa & Relax", category: "Belleza" },
+    { id: "beauty-nails", name: "Uñas & Pestañas", category: "Belleza" },
+    { id: "beauty-glam", name: "Glamour Total", category: "Belleza" },
+    // Ropa (3)
+    { id: "fashion-boutique", name: "Boutique Elegante", category: "Tienda de ropa" },
+    { id: "fashion-street", name: "Streetwear", category: "Tienda de ropa" },
+    { id: "fashion-kids", name: "Moda Infantil", category: "Tienda de ropa" },
+    // Ferretería (3)
+    { id: "hardware-pro", name: "Ferretería Pro", category: "Ferretería" },
+    { id: "hardware-home", name: "Hogar & Construcción", category: "Ferretería" },
+    { id: "hardware-tools", name: "Herramientas Expertas", category: "Ferretería" },
+    // Taller (3)
+    { id: "mechanic-auto", name: "Automotriz General", category: "Taller mecánico" },
+    { id: "mechanic-moto", name: "Motos & Racing", category: "Taller mecánico" },
+    { id: "mechanic-detail", name: "Detailing & Lavado", category: "Taller mecánico" },
+    // Veterinaria (3)
+    { id: "vet-care", name: "Cuidado Animal", category: "Veterinaria" },
+    { id: "vet-petshop", name: "Petshop & Vet", category: "Veterinaria" },
+    { id: "vet-clinic", name: "Clínica Especializada", category: "Veterinaria" },
+    // Gimnasio (3)
+    { id: "gym-crossfit", name: "CrossFit Box", category: "Gimnasio" },
+    { id: "gym-yoga", name: "Yoga & Pilates", category: "Gimnasio" },
+    { id: "gym-body", name: "Bodybuilding Gym", category: "Gimnasio" },
+    // Turismo (3)
+    { id: "travel-adventure", name: "Aventura Extrema", category: "Turismo" },
+    { id: "travel-tours", name: "Tours Guiados", category: "Turismo" },
+    { id: "travel-eco", name: "Ecoturismo", category: "Turismo" },
+    // Hotel (3)
+    { id: "hotel-boutique", name: "Hotel Boutique", category: "Hotel" },
+    { id: "hotel-resort", name: "Resort Playero", category: "Hotel" },
+    { id: "hotel-city", name: "Hotel de Ciudad", category: "Hotel" },
+    // Profesional (3)
+    { id: "pro-lawyer", name: "Bufete Legal", category: "Profesional independiente" },
+    { id: "pro-doctor", name: "Consultorio Médico", category: "Profesional independiente" },
+    { id: "pro-design", name: "Estudio de Diseño", category: "Profesional independiente" },
+    // Otro (3)
+    { id: "other-generic", name: "Negocio General", category: "Otro" },
+    { id: "other-services", name: "Servicios Varios", category: "Otro" },
+    { id: "other-startup", name: "Startup Tech", category: "Otro" }
+];
+
+// 3. Estado Global (Simulado para compatibilidad inmediata sin bundler)
+window.sf_state = {
+    supabase: supabase,
+    user: null,
+    business: null,
+    onboarding: {
+        step: 0,
+        answers: {},
+        sessionToken: null
     },
-
-    PRO: {
-        name: 'Pro',
-        price: 9,
-        features: [
-            'Productos ilimitados',
-            'Pedidos ilimitados',
-            'Plantillas premium',
-            'SEO avanzado',
-            'Soporte prioritario',
-            'Sin comisión'
-        ],
-        limit: Infinity,
-        recommended: true
+    config: {
+        categories: CATEGORIES,
+        templates: TEMPLATES
     }
 };
 
-// ===== ESTADO GLOBAL =====
-
-const sf_state = {
-    view: 'login',
-    chatStep: 0,
-    userId: null,
-    businessId: null,
-
-    userData: {
-        category: '',
-        name: '',
-        description: '',
-        location: '',
-        city: '',
-        whatsapp: '',
-        hours: 'Lun - Dom: 8:00 AM - 10:00 PM',
-        logo: '',
-        brandColor: '#6366f1'
+// Funciones de utilidad globales
+window.sf_utils = {
+    generateSlug: (text) => {
+        return text.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "");
     },
-
-    products: [],
-    cart: [],
-    orders: [],
-
-    adminTab: 'negocio',
-
-    currentTemplate: 'Midnight',
-
-    plan: 'free',
-    planExpiresAt: null,
-
-    session: null,
-
-    coupons: [],
-    pageViews: [],
-
-    analytics: {
-        today: 0,
-        week: 0,
-        conversion: 0
+    showToast: (message, type = 'info') => {
+        const toast = document.createElement('div');
+        toast.className = `fixed top-5 right-5 px-6 py-3 rounded-lg shadow-lg text-white font-medium transform transition-all duration-300 translate-y-0 opacity-100 z-50 ${
+            type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-blue-600'
+        }`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.transform = 'translateY(-100%)';
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 };
 
-// Exponer estado global
-window.sf_state = sf_state;
-
-// ===== POLLING FOR NEW ORDERS =====
-let sf_orderPollingInterval = null;
-let sf_lastOrderCount = 0;
-
-// ===== AI CONTENT DATABASE =====
-const sf_ai_content = {
-    'Restaurante': {
-        templates: [{ name: 'Midnight', theme: 'theme-midnight', accent: '#d4a574', img: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=80' }],
-        benefits: ['Ingredientes 100% frescos', 'Ambiente familiar y acogedor', 'Chef con experiencia internacional'],
-        defaultProducts: [{name: 'Plato del Día', price: 8.50, desc: 'Incluye bebida y postre'}, {name: 'Hamburguesa Especial', price: 12.00, desc: 'Con papas fritas y queso'}],
-        faqs: [{q: '¿Hacen reservas?', a: 'Sí, aceptamos reservas para grupos.'}, {q: '¿Tienen parqueo?', a: 'Contamos con parqueo privado.'}]
-    },
-    'Soda': {
-        templates: [{ name: 'Tico', theme: 'theme-modern', accent: '#16a34a', img: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=1200&q=80' }],
-        benefits: ['Comida casera como la de mamá', 'Refrescos naturales de fruta real', 'Servicio rápido y amable'],
-        defaultProducts: [{name: 'Casado Tradicional', price: 5.50, desc: 'Arroz, frijoles, plátano, ensalada'}, {name: 'Refresco Natural', price: 2.00, desc: 'De temporada'}],
-        faqs: [{q: '¿Aceptan tarjetas?', a: 'Sí, aceptamos todas las tarjetas y SINPE.'}]
-    },
-    'Cafetería': {
-        templates: [{ name: 'Latte', theme: 'theme-modern', accent: '#92400e', img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=1200&q=80' }],
-        benefits: ['Café de especialidad 100% arábica', 'Ambiente perfecto para trabajar', 'Pastelería artesanal diaria'],
-        defaultProducts: [{name: 'Café Americano', price: 2.50, desc: 'Grano de altura'}, {name: 'Croissant', price: 3.00, desc: 'Horneado diariamente'}],
-        faqs: [{q: '¿Tienen WiFi?', a: 'Sí, WiFi de alta velocidad gratuito.'}]
-    },
-    'Barbería': {
-        templates: [{ name: 'Garage', theme: 'theme-garage', accent: '#eab308', img: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=1200&q=80' }],
-        benefits: ['Cortes clásicos y modernos', 'Perfilado de barba con toalla caliente', 'Productos de primera calidad'],
-        defaultProducts: [{name: 'Corte de Cabello', price: 10.00, desc: 'Estilo clásico o moderno'}, {name: 'Perfilado de Barba', price: 7.00, desc: 'Con toalla caliente'}],
-        faqs: [{q: '¿Necesito cita?', a: 'Recomendamos cita, pero aceptamos walk-ins.'}]
-    },
-    'Sublimado': {
-        templates: [{ name: 'Print', theme: 'theme-print', accent: '#6366f1', img: 'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=1200&q=80' }],
-        benefits: ['Impresión de alta definición', 'Tintas resistentes al lavado', 'Diseños 100% personalizados'],
-        defaultProducts: [{name: 'Taza Personalizada', price: 8.00, desc: 'Cerámica de alta calidad'}, {name: 'Camiseta Sublimada', price: 12.00, desc: 'Tela dry-fit'}],
-        faqs: [{q: '¿Puedo enviar mi diseño?', a: 'Sí, aceptamos archivos en PNG o AI.'}]
-    },
-    'default': {
-        templates: [{ name: 'Moderno', theme: 'theme-midnight', accent: '#6366f1', img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80' }],
-        benefits: ['Servicio profesional garantizado', 'Atención personalizada', 'Calidad premium'],
-        defaultProducts: [{name: 'Servicio Básico', price: 20.00, desc: 'Consultar detalles'}, {name: 'Servicio Premium', price: 35.00, desc: 'Incluye garantía'}],
-        faqs: [{q: '¿Tiempo de entrega?', a: 'Generalmente 24-48 horas.'}]
-    }
-};
-
-const allCategories = ['Panadería', 'Belleza', 'Tienda de ropa', 'Ferretería', 'Taller mecánico', 'Profesional independiente', 'Consultorio', 'Veterinaria', 'Gimnasio', 'Hotel', 'Turismo', 'Otro'];
-allCategories.forEach(cat => {
-    if (!sf_ai_content[cat]) {
-        sf_ai_content[cat] = {
-            templates: [{ name: 'Premium', theme: 'theme-midnight', accent: '#6366f1', img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80' }],
-            benefits: ['Servicio profesional garantizado', 'Atención personalizada', 'Calidad premium'],
-            defaultProducts: [{name: 'Servicio Principal', price: 25.00, desc: 'Nuestro servicio más solicitado'}],
-            faqs: [{q: '¿Cómo agendar?', a: 'Directamente por WhatsApp.'}]
-        };
-    }
-});
+console.log("✅ SiteFly 2.0 Core Initialized");
