@@ -1,177 +1,300 @@
-function sf_initAdmin() {
-    document.getElementById('sf-admin-name').value = sf_state.userData.name;
-    document.getElementById('sf-admin-desc').value = sf_state.userData.description;
-    // Fixed: use city instead of location
-    document.getElementById('sf-admin-city').value = sf_state.userData.city || sf_state.userData.location;
-    document.getElementById('sf-admin-whatsapp').value = sf_state.userData.whatsapp;
-    // Fixed: use schedule instead of hours
-    document.getElementById('sf-admin-schedule').value = sf_state.userData.schedule || sf_state.userData.hours;
-    
-    const domain = (sf_state.userData.name || 'mi-negocio').toLowerCase().replace(/\s+/g, '-');
-    document.getElementById('sf-domain-display').textContent = domain + '.sitefly.app';
-    document.getElementById('sf-seo-display').textContent = `Optimizado para "${sf_state.userData.category} en ${sf_state.userData.city || sf_state.userData.location}"`;
-    
-    sf_renderProducts();
-    sf_renderOrders();
-    sf_switchAdminTab('negocio');
-}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - SiteFly</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #0f172a; color: white; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex">
 
-function sf_switchAdminTab(tab) {
-    sf_state.adminTab = tab;
-    ['negocio', 'productos', 'pedidos', 'asistente'].forEach(t => {
-        const panel = document.getElementById(`sf-admin-${t}`);
-        const btn = document.getElementById(`sf-tab-btn-${t}`);
-        if (panel) panel.classList.add('sf-hidden');
-        if (btn) { btn.classList.remove('sf-tab-active'); btn.classList.add('sf-tab-inactive'); }
-    });
-    const activePanel = document.getElementById(`sf-admin-${tab}`);
-    const activeBtn = document.getElementById(`sf-tab-btn-${tab}`);
-    if (activePanel) { activePanel.classList.remove('sf-hidden'); activePanel.classList.add('sf-animate-up'); }
-    if (activeBtn) { activeBtn.classList.remove('sf-tab-inactive'); activeBtn.classList.add('sf-tab-active'); }
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-}
+    <!-- Sidebar -->
+    <aside class="w-64 glass border-r border-gray-800 hidden md:flex flex-col">
+        <div class="p-6 border-b border-gray-800">
+            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">SiteFly Admin</h1>
+            <p id="business-name-display" class="text-xs text-gray-400 mt-1">Cargando...</p>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="switchTab('overview')" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-3 tab-btn tab-active" data-tab="overview">
+                <i data-lucide="layout-dashboard"></i> Resumen
+            </button>
+            <button onclick="switchTab('products')" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-3 tab-btn" data-tab="products">
+                <i data-lucide="package"></i> Productos
+            </button>
+            <button onclick="switchTab('design')" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-3 tab-btn" data-tab="design">
+                <i data-lucide="palette"></i> Diseño
+            </button>
+            <button onclick="switchTab('orders')" class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-3 tab-btn" data-tab="orders">
+                <i data-lucide="shopping-cart"></i> Pedidos
+            </button>
+        </nav>
+        <div class="p-4 border-t border-gray-800">
+            <a id="view-site-btn" href="#" target="_blank" class="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-medium transition-all shadow-lg shadow-green-900/20">
+                <i data-lucide="external-link" class="w-4 h-4"></i> Ver mi Página
+            </a>
+        </div>
+    </aside>
 
-async function sf_updateBusiness() {
-    sf_state.userData.name = document.getElementById('sf-admin-name').value;
-    sf_state.userData.description = document.getElementById('sf-admin-desc').value;
-    // Fixed: use city instead of location
-    sf_state.userData.city = document.getElementById('sf-admin-city').value;
-    sf_state.userData.location = sf_state.userData.city; // Keep for backwards compatibility
-    sf_state.userData.whatsapp = document.getElementById('sf-admin-whatsapp').value;
-    // Fixed: use schedule instead of hours
-    sf_state.userData.schedule = document.getElementById('sf-admin-schedule').value;
-    sf_state.userData.hours = sf_state.userData.schedule; // Keep for backwards compatibility
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8">
+        <!-- Mobile Header -->
+        <div class="md:hidden flex items-center justify-between mb-6">
+            <h1 class="text-xl font-bold">SiteFly Admin</h1>
+            <a id="view-site-btn-mobile" href="#" target="_blank" class="bg-green-600 p-2 rounded-lg">
+                <i data-lucide="external-link" class="w-5 h-5"></i>
+            </a>
+        </div>
 
-    await sf_saveBusiness();
-}
-
-function sf_renderProducts() {
-    const container = document.getElementById('sf-product-list');
-    if (sf_state.products.length === 0) { container.innerHTML = '<p class="text-center text-slate-500 py-8">No hay productos aún.</p>'; return; }
-    container.innerHTML = sf_state.products.map(p => `
-        <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex items-center justify-between gap-4 sf-animate-up">
-            <div class="flex items-center gap-3 flex-1">
-                <div class="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center shrink-0"><i data-lucide="package" class="w-5 h-5 text-slate-400"></i></div>
-                <div class="flex-1 min-w-0">
-                    <input type="text" value="${sf_escapeHtml(p.name)}" class="bg-transparent text-white font-medium text-sm w-full focus:outline-none focus:border-b focus:border-indigo-500" onchange="sf_updateProduct('${p.id}', 'name', this.value)">
-                    <input type="text" value="${sf_escapeHtml(p.description || '')}" class="bg-transparent text-slate-400 text-xs w-full focus:outline-none focus:border-b focus:border-indigo-500" onchange="sf_updateProduct('${p.id}', 'description', this.value)">
+        <!-- Views -->
+        <div id="view-overview" class="space-y-6">
+            <h2 class="text-2xl font-bold mb-4">Resumen del Negocio</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass p-6 rounded-2xl border border-gray-800">
+                    <div class="text-gray-400 text-sm">Visitas Totales</div>
+                    <div class="text-3xl font-bold mt-2">124</div>
+                </div>
+                <div class="glass p-6 rounded-2xl border border-gray-800">
+                    <div class="text-gray-400 text-sm">Clics en WhatsApp</div>
+                    <div class="text-3xl font-bold mt-2 text-green-400">18</div>
+                </div>
+                <div class="glass p-6 rounded-2xl border border-gray-800">
+                    <div class="text-gray-400 text-sm">Productos Activos</div>
+                    <div class="text-3xl font-bold mt-2" id="active-products-count">0</div>
                 </div>
             </div>
-            <div class="flex items-center gap-2">
-                <div class="flex items-center bg-slate-700 rounded-lg"><span class="text-slate-400 pl-3 text-sm">$</span><input type="number" value="${p.price}" step="0.01" class="bg-transparent text-white text-sm w-16 py-2 focus:outline-none" onchange="sf_updateProduct('${p.id}', 'price', parseFloat(this.value))"></div>
-                <button onclick="sf_deleteProduct('${p.id}')" class="p-2 text-slate-400 hover:text-red-400 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            
+            <div class="glass p-6 rounded-2xl border border-gray-800 mt-8">
+                <h3 class="font-bold text-lg mb-4">Configuración Básica</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Nombre del Negocio</label>
+                        <input type="text" id="edit-name" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">WhatsApp</label>
+                        <input type="text" id="edit-whatsapp" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 focus:border-blue-500 outline-none">
+                    </div>
+                </div>
+                <button onclick="saveBasicInfo()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">Guardar Cambios</button>
             </div>
         </div>
-    `).join('');
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-}
 
-async function sf_addProduct() {
-    if (sf_state.products.length >= 5) { 
-        sf_showToast('Plan Gratuito: máximo 5 productos.', 'warning');
-        return; 
-    }
-    const newProduct = { id: 'demo-' + Date.now(), name: 'Nuevo producto', description: 'Descripción', price: 0 };
-    const savedProduct = await sf_saveProduct(newProduct);
-    if (savedProduct) newProduct.id = savedProduct.id;
-    sf_state.products.push(newProduct);
-    sf_renderProducts();
-}
+        <div id="view-products" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold">Mis Productos</h2>
+                <button onclick="openProductModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Producto
+                </button>
+            </div>
+            <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Productos cargados dinámicamente -->
+            </div>
+        </div>
 
-async function sf_updateProduct(id, field, value) {
-    const p = sf_state.products.find(x => x.id == id);
-    if (p) {
-        p[field] = value;
-        await sf_saveProduct(p);
-    }
-}
+        <div id="view-design" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold">Diseño y Plantilla</h2>
+            <div class="glass p-6 rounded-2xl border border-gray-800">
+                <p class="text-gray-400 mb-4">Actualmente usas la plantilla: <span id="current-template" class="text-white font-bold">...</span></p>
+                <div class="p-4 bg-yellow-900/20 border border-yellow-700/50 rounded-lg text-yellow-200 text-sm">
+                    ℹ️ El cambio de plantilla avanzado estará disponible en la próxima actualización. Por ahora puedes editar colores básicos.
+                </div>
+            </div>
+        </div>
 
-async function sf_deleteProduct(id) {
-    await sf_deleteProductFromDB(id);
-    sf_state.products = sf_state.products.filter(p => p.id != id);
-    sf_renderProducts();
-}
+        <div id="view-orders" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold">Pedidos Recientes</h2>
+            <div class="glass p-8 rounded-2xl border border-gray-800 text-center text-gray-400">
+                <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-4 opacity-50"></i>
+                <p>No hay pedidos recientes. ¡Comparte tu enlace para empezar a vender!</p>
+            </div>
+        </div>
+    </main>
 
-// ===== ORDERS =====
-function sf_renderOrders() {
-    const container = document.getElementById('sf-orders-list');
-    const pendingCount = sf_state.orders.filter(o => o.status === 'Pendiente').length;
-    const badge = document.getElementById('sf-pending-badge');
-    if (pendingCount > 0) { badge.textContent = pendingCount; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
+    <!-- Modal Producto -->
+    <div id="product-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <h3 class="text-xl font-bold mb-4">Nuevo Producto</h3>
+            <input type="text" id="prod-name" placeholder="Nombre del producto" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 outline-none focus:border-blue-500">
+            <textarea id="prod-desc" placeholder="Descripción" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3 outline-none focus:border-blue-500 h-24"></textarea>
+            <div class="flex gap-3 mb-4">
+                <input type="number" id="prod-price" placeholder="Precio ($)" class="w-1/2 bg-gray-800 border border-gray-700 rounded-lg p-3 outline-none focus:border-blue-500">
+                <input type="text" id="prod-img" placeholder="URL Imagen (opcional)" class="w-1/2 bg-gray-800 border border-gray-700 rounded-lg p-3 outline-none focus:border-blue-500">
+            </div>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeProductModal()" class="px-4 py-2 text-gray-400 hover:text-white">Cancelar</button>
+                <button onclick="saveProduct()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium">Guardar</button>
+            </div>
+        </div>
+    </div>
 
-    if (sf_state.orders.length === 0) { container.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-slate-500">No hay pedidos aún.</td></tr>'; return; }
-    container.innerHTML = sf_state.orders.map(order => `
-        <tr class="hover:bg-slate-800/50 transition-colors">
-            <td class="px-4 py-3 font-mono text-xs text-slate-400">#${order.id.toString().slice(-4)}</td>
-            <td class="px-4 py-3"><div class="font-medium text-white">${sf_escapeHtml(order.customer_name)}</div><div class="text-xs text-slate-400">${sf_escapeHtml(order.customer_phone)}</div></td>
-            <td class="px-4 py-3 font-semibold">$${order.total.toFixed(2)}</td>
-            <td class="px-4 py-3">
-                <select onchange="sf_updateOrderStatus('${order.id}', this.value)" class="text-xs font-medium px-2 py-1 rounded-full border-0 status-${order.status.toLowerCase()} cursor-pointer">
-                    <option value="Pendiente" ${order.status === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                    <option value="Confirmado" ${order.status === 'Confirmado' ? 'selected' : ''}>Confirmado</option>
-                    <option value="Preparando" ${order.status === 'Preparando' ? 'selected' : ''}>Preparando</option>
-                    <option value="Entregado" ${order.status === 'Entregado' ? 'selected' : ''}>Entregado</option>
-                </select>
-            </td>
-        </tr>
-    `).join('');
-}
+    <script src="js/config.js"></script>
+    <script>
+        lucide.createIcons();
+        
+        let currentBusiness = null;
+        const slug = new URLSearchParams(window.location.search).get('slug');
 
-// ===== AI ASSISTANT =====
-async function sf_processAssistantCommand() {
-    const input = document.getElementById('sf-assistant-input');
-    const cmd = input.value.trim().toLowerCase();
-    if (!cmd) return;
-    const chatContainer = document.getElementById('sf-assistant-chat');
-    chatContainer.innerHTML += `<div class="flex justify-end mb-4 sf-animate-up"><div class="bg-indigo-600 text-white px-4 py-3 rounded-2xl text-sm max-w-[80%]">${sf_escapeHtml(input.value)}</div></div>`;
-    input.value = '';
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+        async function loadBusiness() {
+            if (!slug) {
+                alert("No se encontró el negocio. Redirigiendo...");
+                window.location.href = 'index.html';
+                return;
+            }
 
-    setTimeout(async () => {
-        let response = '';
-        if (cmd.includes('agrega') && cmd.includes('producto')) {
-            const match = cmd.match(/agrega.*?producto.*?llamado\s+(.+?)\s+a\s+\$?(\d+(?:\.\d+)?)/i) || cmd.match(/agrega\s+(.+?)\s+a\s+\$?(\d+(?:\.\d+)?)/i);
-            if (match) {
-                const name = match[1].trim(); const price = parseFloat(match[2]);
-                const newProduct = { id: 'demo-' + Date.now(), name: name, description: 'Agregado por IA', price: price };
-                const savedProduct = await sf_saveProduct(newProduct);
-                if (savedProduct) newProduct.id = savedProduct.id;
-                sf_state.products.push(newProduct);
-                sf_renderProducts();
-                response = `¡Listo! He agregado "${name}" a $${price.toFixed(2)} a tu catálogo.`;
-            } else { response = 'No entendí el nombre o precio. Intenta: "Agrega un producto llamado Café a $2.50"'; }
-        } else if (cmd.includes('cambia el precio de')) {
-            const match = cmd.match(/cambia el precio de\s+(.+?)\s+a\s+\$?(\d+(?:\.\d+)?)/i);
-            if (match) {
-                const name = match[1].trim(); const price = parseFloat(match[2]);
-                const product = sf_state.products.find(p => p.name.toLowerCase().includes(name.toLowerCase()));
-                if (product) { 
-                    product.price = price; 
-                    await sf_saveProduct(product);
-                    sf_renderProducts(); 
-                    response = `He actualizado el precio de "${product.name}" a $${price.toFixed(2)}.`; 
+            // Configurar botón de ver página
+            const viewUrl = `negocio.html?slug=${slug}`;
+            document.getElementById('view-site-btn').href = viewUrl;
+            document.getElementById('view-site-btn-mobile').href = viewUrl;
+
+            try {
+                // Intentar cargar de Supabase si está configurado
+                if (window.sf_state.supabase) {
+                    const { data, error } = await window.sf_state.supabase
+                        .from('businesses')
+                        .select('*')
+                        .eq('slug', slug)
+                        .single();
+                    
+                    if (error) throw error;
+                    currentBusiness = data;
+                } else {
+                    // Modo Demo / Fallback
+                    currentBusiness = {
+                        name: "Jale Costura y Sublimado",
+                        whatsapp: "50600000000",
+                        template_id: "fashion-boutique",
+                        products: []
+                    };
                 }
-                else { response = `No encontré un producto llamado "${name}".`; }
+
+                // Renderizar datos
+                document.getElementById('business-name-display').textContent = currentBusiness.name;
+                document.getElementById('edit-name').value = currentBusiness.name;
+                document.getElementById('edit-whatsapp').value = currentBusiness.whatsapp || '';
+                document.getElementById('current-template').textContent = currentBusiness.template_id || 'Default';
+                
+                renderProducts(currentBusiness.products || []);
+
+            } catch (err) {
+                console.error("Error cargando negocio:", err);
+                window.sf_utils.showToast("Error cargando datos", "error");
             }
-        } else if (cmd.includes('cambia el horario')) {
-            const match = cmd.match(/cambia el horario a\s+(.+)/i);
-            if (match) {
-                const hours = match[1].trim();
-                sf_state.userData.hours = hours;
-                document.getElementById('sf-admin-hours').value = hours;
-                await sf_saveBusiness();
-                response = `He actualizado el horario a: ${hours}`;
-            } else {
-                response = 'No entendí el horario. Intenta: "Cambia el horario a 8am a 6pm"';
-            }
-        } else {
-            response = 'Puedo ayudarte a:
-• Agregar productos: "Agrega un producto llamado Taza a $8.00"
-• Cambiar precios: "Cambia el precio de la Hamburguesa a $10"
-• Cambiar horario: "Cambia el horario a 8am a 6pm"';
         }
-        chatContainer.innerHTML += `<div class="flex gap-3 mb-4 sf-animate-up"><img src="https://image.qwenlm.ai/public_source/0ba08b56-35a5-4f25-adda-eb45071b3040/115239c29-3833-4da1-a16c-f38fdf34252c.png" class="w-8 h-8 rounded-full"><div class="sf-bubble-ai text-white px-4 py-3 rounded-2xl text-sm max-w-[80%] whitespace-pre-line">${sf_escapeHtml(response)}</div></div>`;
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-    }, 800);
-}
+
+        function switchTab(tabId) {
+            document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active');
+                if(btn.dataset.tab === tabId) btn.classList.add('tab-active');
+            });
+        }
+
+        function renderProducts(products) {
+            const grid = document.getElementById('products-grid');
+            document.getElementById('active-products-count').textContent = products.length;
+            
+            if (products.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-10 text-gray-500">No hay productos aún. ¡Agrega el primero!</div>`;
+                return;
+            }
+
+            grid.innerHTML = products.map((p, i) => `
+                <div class="glass p-4 rounded-xl border border-gray-800 flex flex-col gap-3">
+                    <div class="h-40 bg-gray-800 rounded-lg overflow-hidden relative">
+                        ${p.image_url ? `<img src="${p.image_url}" class="w-full h-full object-cover">` : '<div class="w-full h-full flex items-center justify-center text-gray-600">Sin imagen</div>'}
+                        <button onclick="deleteProduct(${i})" class="absolute top-2 right-2 bg-red-500/80 p-1.5 rounded-full hover:bg-red-600 transition-colors">
+                            <i data-lucide="trash-2" class="w-4 h-4 text-white"></i>
+                        </button>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg">${p.name}</h4>
+                        <p class="text-sm text-gray-400 line-clamp-2">${p.description}</p>
+                        <div class="mt-2 flex justify-between items-center">
+                            <span class="text-blue-400 font-bold">$${p.price}</span>
+                            <span class="text-xs ${p.active ? 'text-green-400' : 'text-red-400'} px-2 py-1 rounded-full bg-gray-800 border border-gray-700">
+                                ${p.active ? 'Activo' : 'Oculto'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function openProductModal() {
+            document.getElementById('product-modal').classList.remove('hidden');
+        }
+
+        function closeProductModal() {
+            document.getElementById('product-modal').classList.add('hidden');
+            // Limpiar inputs
+            document.getElementById('prod-name').value = '';
+            document.getElementById('prod-desc').value = '';
+            document.getElementById('prod-price').value = '';
+            document.getElementById('prod-img').value = '';
+        }
+
+        function saveProduct() {
+            const name = document.getElementById('prod-name').value;
+            const price = document.getElementById('prod-price').value;
+            
+            if(!name || !price) {
+                alert("Nombre y precio son obligatorios");
+                return;
+            }
+
+            const newProduct = {
+                name: name,
+                description: document.getElementById('prod-desc').value,
+                price: parseFloat(price),
+                image_url: document.getElementById('prod-img').value || 'https://via.placeholder.com/300',
+                active: true,
+                created_at: new Date().toISOString()
+            };
+
+            if(!currentBusiness.products) currentBusiness.products = [];
+            currentBusiness.products.push(newProduct);
+            
+            // En producción: guardar en Supabase
+            // await supabase.from('products').insert(...)
+
+            renderProducts(currentBusiness.products);
+            closeProductModal();
+            window.sf_utils.showToast("Producto agregado", "success");
+        }
+
+        function deleteProduct(index) {
+            if(confirm('¿Eliminar este producto?')) {
+                currentBusiness.products.splice(index, 1);
+                renderProducts(currentBusiness.products);
+                // En producción: eliminar en DB
+            }
+        }
+
+        function saveBasicInfo() {
+            const newName = document.getElementById('edit-name').value;
+            const newWa = document.getElementById('edit-whatsapp').value;
+            
+            currentBusiness.name = newName;
+            currentBusiness.whatsapp = newWa;
+            
+            document.getElementById('business-name-display').textContent = newName;
+            window.sf_utils.showToast("Información actualizada", "success");
+            // En producción: update en DB
+        }
+
+        // Init
+        loadBusiness();
+    </script>
+</body>
+</html>
