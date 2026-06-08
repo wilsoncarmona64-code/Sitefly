@@ -3,97 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SiteFly - Crea tu tienda online</title>
-    <meta name="description" content="Crea tu tienda online en minutos con SiteFly">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <title>SiteFly 2.0 - Crea tu Negocio Digital</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #0f172a; color: white; }
+        .chat-container { height: calc(100vh - 200px); }
+        .message { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .option-card:hover { transform: translateY(-2px); border-color: #3b82f6; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); }
+    </style>
 </head>
-<body>
-    <nav class="navbar">
-        <div class="container nav-container">
-            <a href="index.html" class="logo"><i class="fas fa-rocket"></i> SiteFly</a>
-            <div class="nav-links" id="nav-links"></div>
-        </div>
-    </nav>
+<body class="antialiased overflow-hidden">
 
-    <header class="hero" id="hero-section">
-        <div class="container hero-content">
-            <div class="hero-text">
-                <h1>Tu tienda online en <span class="highlight">minutos</span></h1>
-                <p>Crea, gestiona y vende sin saber programar.</p>
-                <div class="auth-card">
-                    <h3>Comienza gratis</h3>
-                    <form id="login-form" class="auth-form">
-                        <div class="input-group">
-                            <label for="email-input">Correo electrónico</label>
-                            <input type="email" id="email-input" placeholder="tu@correo.com" autocomplete="email" required>
-                        </div>
-                        <button type="submit" id="submit-btn" class="btn-primary btn-block">
-                            Enviar enlace mágico
-                        </button>
-                    </form>
-                    <div id="auth-message" class="auth-message" style="display:none;"></div>
-                </div>
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-40 glass border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i data-lucide="rocket" class="text-blue-500 w-8 h-8"></i>
+                <span class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">SiteFly 2.0</span>
             </div>
-            <div class="hero-image">
-                <img src="https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Dashboard SiteFly">
+            <div id="auth-buttons">
+                <!-- Se inyecta dinámicamente -->
             </div>
         </div>
     </header>
 
-    <section class="features">
-        <div class="container">
-            <h2 class="section-title">Todo lo que necesitas</h2>
-            <div class="features-grid">
-                <div class="feature-card"><i class="fas fa-bolt"></i><h3>Rápido</h3><p>Tu tienda lista en menos de 5 minutos.</p></div>
-                <div class="feature-card"><i class="fas fa-mobile-alt"></i><h3>Mobile First</h3><p>Diseño perfecto para celulares.</p></div>
-                <div class="feature-card"><i class="fab fa-whatsapp"></i><h3>Pedidos por WhatsApp</h3><p>Recibe órdenes directamente en tu chat.</p></div>
-            </div>
-        </div>
-    </section>
-
-    <section class="pricing-preview">
-        <div class="container">
-            <h2 class="section-title">Planes simples</h2>
-            <div class="pricing-grid">
-                <div class="price-card">
-                    <h3>Gratuito</h3>
-                    <div class="price">$0<span>/mes</span></div>
-                    <ul>
-                        <li><i class="fas fa-check"></i> Hasta 5 productos</li>
-                        <li><i class="fas fa-check"></i> Pedidos por WhatsApp</li>
-                        <li><i class="fas fa-check"></i> Soporte básico</li>
-                    </ul>
-                    <button class="btn-secondary btn-block" disabled>Actual</button>
+    <!-- Main Chat Area -->
+    <main class="pt-20 pb-10 px-4 max-w-4xl mx-auto chat-container flex flex-col">
+        <div id="chat-history" class="flex-1 overflow-y-auto space-y-6 pr-2 mb-4">
+            <!-- Mensaje de bienvenida -->
+            <div class="message flex gap-4">
+                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="bot" class="w-6 h-6"></i>
                 </div>
-                <div class="price-card featured">
-                    <div class="badge-popular">Popular</div>
-                    <h3>Pro</h3>
-                    <div class="price">$9<span>/mes</span></div>
-                    <ul>
-                        <li><i class="fas fa-check"></i> Productos ilimitados</li>
-                        <li><i class="fas fa-check"></i> Cupones de descuento</li>
-                        <li><i class="fas fa-check"></i> Analytics avanzado</li>
-                        <li><i class="fas fa-check"></i> Sin marca SiteFly</li>
-                    </ul>
-                    <button class="btn-primary btn-block" onclick="openPricing()">Elegir Pro</button>
+                <div class="bg-gray-800 p-4 rounded-2xl rounded-tl-none max-w-[85%] border border-gray-700 shadow-lg">
+                    <p class="text-lg">¡Hola! Soy tu asistente digital de SiteFly. 🚀</p>
+                    <p class="text-gray-400 mt-2">Voy a ayudarte a crear tu negocio digital en menos de 2 minutos. Solo necesito hacerte 6 preguntas simples.</p>
+                    <button onclick="startOnboarding()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-medium transition-all flex items-center gap-2">
+                        Comenzar ahora <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
                 </div>
             </div>
         </div>
-    </section>
 
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2026 SiteFly. Todos los derechos reservados.</p>
+        <!-- Input Area (Oculto hasta necesario) -->
+        <div id="input-area" class="hidden glass p-4 rounded-2xl border border-gray-700">
+            <input type="text" id="user-input" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors" placeholder="Escribe tu respuesta..." />
         </div>
-    </footer>
+    </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/app.js"></script>
+    <script>
+        lucide.createIcons();
+        
+        let currentStep = 0;
+        const steps = [
+            { question: "¿Qué tipo de negocio vas a crear?", type: "category" },
+            { question: "¿Cuál es el nombre de tu negocio?", type: "text", key: "name" },
+            { question: "Cuéntame brevemente qué haces o qué vendes.", type: "text", key: "description" },
+            { question: "¿En qué ciudad o dirección estás ubicado?", type: "text", key: "address" },
+            { question: "¿Cuál es tu número de WhatsApp para recibir pedidos?", type: "text", key: "whatsapp" },
+            { question: "Elige el estilo visual que más te guste para tu web.", type: "template" }
+        ];
+
+        function startOnboarding() {
+            addBotMessage(steps[0].question);
+            if(steps[0].type === 'category') showCategoryOptions();
+            currentStep = 1;
+        }
+
+        function addBotMessage(text) {
+            const history = document.getElementById('chat-history');
+            const div = document.createElement('div');
+            div.className = 'message flex gap-4';
+            div.innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="bot" class="w-6 h-6"></i>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-2xl rounded-tl-none max-w-[85%] border border-gray-700 shadow-lg">
+                    <p>${text}</p>
+                </div>
+            `;
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+            lucide.createIcons();
+        }
+
+        function addUserMessage(text) {
+            const history = document.getElementById('chat-history');
+            const div = document.createElement('div');
+            div.className = 'message flex gap-4 justify-end';
+            div.innerHTML = `
+                <div class="bg-blue-600 p-4 rounded-2xl rounded-tr-none max-w-[85%] shadow-lg">
+                    <p>${text}</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center shrink-0">
+                    <i data-lucide="user" class="w-6 h-6"></i>
+                </div>
+            `;
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+            lucide.createIcons();
+        }
+
+        function showCategoryOptions() {
+            const history = document.getElementById('chat-history');
+            const div = document.createElement('div');
+            div.className = 'message flex gap-4';
+            
+            let optionsHtml = '<div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4">';
+            window.sf_state.config.categories.forEach(cat => {
+                optionsHtml += `<button onclick="selectCategory('${cat}')" class="option-card bg-gray-800 hover:bg-gray-700 border border-gray-700 p-3 rounded-xl text-sm transition-all text-left">${cat}</button>`;
+            });
+            optionsHtml += '</div>';
+
+            div.innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="bot" class="w-6 h-6"></i>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-2xl rounded-tl-none max-w-[95%] border border-gray-700 shadow-lg w-full">
+                    <p>Selecciona una categoría:</p>
+                    ${optionsHtml}
+                </div>
+            `;
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+            lucide.createIcons();
+        }
+
+        function selectCategory(cat) {
+            addUserMessage(cat);
+            window.sf_state.onboarding.answers.category = cat;
+            nextStep();
+        }
+
+        function showTemplateOptions(category) {
+            const history = document.getElementById('chat-history');
+            const div = document.createElement('div');
+            div.className = 'message flex gap-4';
+            
+            const filteredTemplates = window.sf_state.config.templates.filter(t => t.category === category || t.category === 'Otro');
+            // Mostrar solo 6 opciones aleatorias para no saturar, o todas si son pocas
+            const displayTemplates = filteredTemplates.sort(() => 0.5 - Math.random()).slice(0, 6);
+
+            let optionsHtml = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">';
+            displayTemplates.forEach(t => {
+                optionsHtml += `
+                    <button onclick="selectTemplate('${t.id}')" class="option-card group bg-gray-800 hover:bg-gray-700 border border-gray-700 p-4 rounded-xl text-left transition-all flex items-center gap-3">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
+                            ${t.name.charAt(0)}
+                        </div>
+                        <div>
+                            <div class="font-bold text-white group-hover:text-blue-400">${t.name}</div>
+                            <div class="text-xs text-gray-400">Plantilla ${t.category}</div>
+                        </div>
+                    </button>
+                `;
+            });
+            optionsHtml += '</div><p class="text-xs text-gray-500 mt-2">* Puedes cambiar esto después en el panel.</p>';
+
+            div.innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="bot" class="w-6 h-6"></i>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-2xl rounded-tl-none max-w-[95%] border border-gray-700 shadow-lg w-full">
+                    <p>¡Excelente elección! Para "${category}", estas son algunas plantillas recomendadas:</p>
+                    ${optionsHtml}
+                </div>
+            `;
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+            lucide.createIcons();
+        }
+
+        function selectTemplate(id) {
+            const template = window.sf_state.config.templates.find(t => t.id === id);
+            addUserMessage(template.name);
+            window.sf_state.onboarding.answers.template = id;
+            finishOnboarding();
+        }
+
+        function nextStep() {
+            if (currentStep >= steps.length) return;
+            
+            const step = steps[currentStep];
+            setTimeout(() => {
+                addBotMessage(step.question);
+                if (step.type === 'template') {
+                    showTemplateOptions(window.sf_state.onboarding.answers.category);
+                } else if (step.type === 'text') {
+                    document.getElementById('input-area').classList.remove('hidden');
+                    document.getElementById('user-input').focus();
+                }
+                currentStep++;
+            }, 600);
+        }
+
+        function finishOnboarding() {
+            addBotMessage("✨ ¡Perfecto! Estoy generando tu sitio web con IA...");
+            
+            // Simulación de proceso de IA
+            setTimeout(() => {
+                // Guardar en DB (Simulado para demo, usar supabase en prod)
+                const businessName = window.sf_state.onboarding.answers.name;
+                const slug = window.sf_utils.generateSlug(businessName);
+                
+                // Redirigir al dashboard
+                window.sf_utils.showToast("Negocio creado con éxito", "success");
+                setTimeout(() => {
+                    window.location.href = `admin.html?slug=${slug}`;
+                }, 1500);
+            }, 2000);
+        }
+
+        // Manejo del input de texto
+        document.getElementById('user-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && this.value.trim() !== '') {
+                const val = this.value.trim();
+                addUserMessage(val);
+                this.value = '';
+                
+                // Guardar respuesta
+                const stepKey = steps[currentStep-1].key;
+                if(stepKey) window.sf_state.onboarding.answers[stepKey] = val;
+                
+                document.getElementById('input-area').classList.add('hidden');
+                nextStep();
+            }
+        });
+
+        // Auth Check Simple
+        const authContainer = document.getElementById('auth-buttons');
+        // Aquí iría la lógica real de auth de Supabase
+        authContainer.innerHTML = `
+            <button onclick="alert('Funcionalidad de Login en desarrollo')" class="text-sm text-gray-300 hover:text-white mr-4">Iniciar Sesión</button>
+        `;
+    </script>
 </body>
 </html>
