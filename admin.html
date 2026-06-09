@@ -3,497 +3,482 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SiteFly Admin - Panel de Control</title>
-    <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.15/index.css" rel="stylesheet">
+    <title>SiteFly Admin - Panel Unificado</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #0f172a; color: white; }
+        .glass { background: rgba(30, 41, 59, 0.72); backdrop-filter: blur(10px); }
+        .tab-active { border-left: 3px solid #3b82f6; background: rgba(59,130,246,0.1); }
+        .card { background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(55, 65, 81, 0.8); border-radius: 1rem; }
+        .input { background: #0f172a; border: 1px solid #374151; color: white; outline: none; }
+        .input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+        .toast { position: fixed; bottom: 20px; right: 20px; z-index: 1000; min-width: 260px; max-width: 360px; padding: 14px 16px; border-radius: 14px; box-shadow: 0 12px 30px rgba(0,0,0,.25); transform: translateY(100%); opacity: 0; transition: all .25s ease; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast-success { background: #065f46; color: #ecfdf5; }
+        .toast-error { background: #7f1d1d; color: #fef2f2; }
+        .toast-info { background: #1e3a8a; color: #eff6ff; }
+        .modal-backdrop { background: rgba(0,0,0,.78); backdrop-filter: blur(6px); }
+        .sf-hidden { display: none; }
+        .sf-animate-up { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen">
-    <!-- Loading -->
-    <div id="loading" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50">
-        <div class="text-center">
-            <div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p class="text-white text-lg">Cargando panel...</p>
+<body class="antialiased min-h-screen flex">
+
+    <!-- Sidebar -->
+    <aside class="w-64 glass border-r border-gray-800 hidden md:flex flex-col fixed h-full z-30">
+        <div class="p-6 border-b border-gray-800">
+            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">SiteFly Admin</h1>
+            <p id="business-name-sidebar" class="text-xs text-gray-400 mt-1">Cargando...</p>
         </div>
-    </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="switchTab('overview')" class="tab-btn w-full text-left px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-3" data-tab="overview">
+                <i data-lucide="layout-dashboard"></i> Resumen
+            </button>
+            <button onclick="switchTab('products')" class="tab-btn w-full text-left px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-3" data-tab="products">
+                <i data-lucide="package"></i> Productos
+            </button>
+            <button onclick="switchTab('design')" class="tab-btn w-full text-left px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-3" data-tab="design">
+                <i data-lucide="palette"></i> Diseño
+            </button>
+            <button onclick="switchTab('orders')" class="tab-btn w-full text-left px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-3" data-tab="orders">
+                <i data-lucide="shopping-cart"></i> Pedidos
+            </button>
+            <button onclick="switchTab('assistant')" class="tab-btn w-full text-left px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-3" data-tab="assistant">
+                <i data-lucide="sparkles"></i> Asistente IA
+            </button>
+        </nav>
+        <div class="p-4 border-t border-gray-800">
+            <a id="view-site-btn" href="#" target="_blank" class="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-medium transition-all">
+                <i data-lucide="external-link"></i> Ver mi Página
+            </a>
+        </div>
+    </aside>
 
     <!-- Main Content -->
-    <div id="admin-container" class="hidden">
-        <!-- Header -->
-        <header class="bg-slate-800/50 border-b border-slate-700 sticky top-0 z-40 backdrop-blur-sm">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex items-center justify-between h-16">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="rocket" class="w-8 h-8 text-indigo-500"></i>
-                        <div>
-                            <h1 class="text-xl font-bold">SiteFly Admin</h1>
-                            <p class="text-xs text-slate-400" id="business-name-header">Mi Negocio</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <span id="plan-badge" class="px-3 py-1 bg-indigo-600/20 text-indigo-400 rounded-full text-xs font-medium">Plan Gratuito</span>
-                        <button onclick="logout()" class="text-slate-400 hover:text-white transition-colors">
-                            <i data-lucide="log-out" class="w-5 h-5"></i>
-                        </button>
-                    </div>
+    <main class="flex-1 ml-0 md:ml-64 overflow-y-auto p-5 md:p-8">
+        <!-- Mobile top bar -->
+        <div class="md:hidden flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-xl font-bold">SiteFly Admin</h1>
+                <p id="business-name-mobile" class="text-xs text-gray-400">Cargando...</p>
+            </div>
+            <a id="view-site-btn-mobile" href="#" target="_blank" class="bg-green-600 p-2 rounded-lg">
+                <i data-lucide="external-link" class="w-5 h-5"></i>
+            </a>
+        </div>
+
+        <!-- Status Bar -->
+        <div id="admin-status" class="hidden mb-6 p-4 rounded-2xl border border-blue-500/30 bg-blue-500/10 text-blue-100">
+            <div class="flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+                <span id="admin-status-text">Cargando datos...</span>
+            </div>
+        </div>
+
+        <!-- ========== RESUME TAB ========== -->
+        <div id="view-overview" class="space-y-6">
+            <h2 class="text-2xl font-bold mb-4">Resumen del Negocio</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="glass p-6 rounded-2xl border border-gray-800">
+                    <div class="text-gray-400 text-sm">Visitas Totales</div>
+                    <div class="text-3xl font-bold mt-2" id="total-visits">0</div>
+                </div>
+                <div class="glass p-6 rounded-2xl border border-gray-800">
+                    <div class="text-gray-400 text-sm">Clics WhatsApp</div>
+                    <div class="text-3xl font-bold mt-2 text-green-400" id="whatsapp-clicks">0</div>
+                </div>
+                <div class="glass p-6 rounded-2xl border border-gray-800">
+                    <div class="text-gray-400 text-sm">Productos Activos</div>
+                    <div class="text-3xl font-bold mt-2" id="active-products-count">0</div>
+                </div>
+                <div class="glass p-6 rounded-2xl border border-gray-800">
+                    <div class="text-gray-400 text-sm">Pedidos</div>
+                    <div class="text-3xl font-bold mt-2 text-yellow-400" id="orders-count">0</div>
                 </div>
             </div>
-        </header>
 
-        <!-- Tabs -->
-        <div class="bg-slate-800/30 border-b border-slate-700">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex gap-1 overflow-x-auto py-2">
-                    <button id="sf-tab-btn-negocio" onclick="sf_switchAdminTab('negocio')" class="sf-tab-active px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all">
-                        <i data-lucide="store" class="w-4 h-4 inline mr-2"></i>Negocio
-                    </button>
-                    <button id="sf-tab-btn-productos" onclick="sf_switchAdminTab('productos')" class="sf-tab-inactive px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all">
-                        <i data-lucide="package" class="w-4 h-4 inline mr-2"></i>Productos
-                    </button>
-                    <button id="sf-tab-btn-pedidos" onclick="sf_switchAdminTab('pedidos')" class="sf-tab-inactive px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all">
-                        <i data-lucide="shopping-cart" class="w-4 h-4 inline mr-2"></i>Pedidos
-                        <span id="sf-pending-badge" class="hidden ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">0</span>
-                    </button>
-                    <button id="sf-tab-btn-asistente" onclick="sf_switchAdminTab('asistente')" class="sf-tab-inactive px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all">
-                        <i data-lucide="sparkles" class="w-4 h-4 inline mr-2"></i>Asistente IA
-                    </button>
+            <div class="glass p-6 rounded-2xl border border-gray-800 mt-8">
+                <h3 class="font-bold text-lg mb-4">Configuración Básica</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="block text-sm text-gray-400 mb-1">Nombre del Negocio</label><input type="text" id="edit-name" class="w-full input rounded-lg p-3"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">WhatsApp</label><input type="text" id="edit-whatsapp" class="w-full input rounded-lg p-3"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">Categoría</label><input type="text" id="edit-category" class="w-full input rounded-lg p-3"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">Color de marca</label><input type="color" id="edit-brand-color" class="w-full h-12 rounded-lg bg-transparent border border-gray-700 p-1"></div>
+                    <div class="md:col-span-2"><label class="block text-sm text-gray-400 mb-1">Descripción</label><textarea id="edit-description" rows="4" class="w-full input rounded-lg p-3 resize-none"></textarea></div>
+                    <div class="md:col-span-2"><label class="block text-sm text-gray-400 mb-1">Dirección / Ubicación</label><input type="text" id="edit-address" class="w-full input rounded-lg p-3"></div>
+                </div>
+                <button onclick="saveBasicInfo()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> Guardar Cambios</button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass p-6 rounded-2xl border border-gray-800">
+                    <h3 class="font-bold text-lg mb-4">Vista Rápida</h3>
+                    <div class="space-y-3 text-sm text-gray-300">
+                        <div class="flex justify-between"><span>Plantilla</span><span id="current-template">...</span></div>
+                        <div class="flex justify-between"><span>Plan</span><span id="current-plan">free</span></div>
+                        <div class="flex justify-between"><span>Slug</span><span id="current-slug">...</span></div>
+                    </div>
+                </div>
+                <div class="glass p-6 rounded-2xl border border-gray-800">
+                    <h3 class="font-bold text-lg mb-4">Acciones rápidas</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button onclick="switchTab('products')" class="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-left"><div class="font-medium">Administrar productos</div><div class="text-xs text-gray-400">CRUD completo</div></button>
+                        <button onclick="switchTab('orders')" class="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-left"><div class="font-medium">Ver pedidos</div><div class="text-xs text-gray-400">Últimas ventas</div></button>
+                        <button onclick="switchTab('design')" class="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-left"><div class="font-medium">Diseño</div><div class="text-xs text-gray-400">Tema y color</div></button>
+                        <button onclick="refreshDashboard()" class="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-left"><div class="font-medium">Refrescar datos</div><div class="text-xs text-gray-400">Volver a cargar</div></button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Main Content Area -->
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Negocio Tab -->
-            <div id="sf-admin-negocio" class="sf-hidden">
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6 sf-animate-up">
-                        <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                            <i data-lucide="building" class="w-5 h-5 text-indigo-500"></i>
-                            Información del Negocio
-                        </h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm text-slate-400 mb-1">Nombre</label>
-                                <input type="text" id="sf-admin-name" class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-indigo-500 transition-colors" onchange="sf_updateBusiness()">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-slate-400 mb-1">Descripción</label>
-                                <textarea id="sf-admin-desc" rows="3" class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-indigo-500 transition-colors resize-none" onchange="sf_updateBusiness()"></textarea>
-                            </div>
-                            <div>
-                                <label class="block text-sm text-slate-400 mb-1">Ciudad / Ubicación</label>
-                                <input type="text" id="sf-admin-city" class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-indigo-500 transition-colors" onchange="sf_updateBusiness()">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-slate-400 mb-1">WhatsApp</label>
-                                <input type="tel" id="sf-admin-whatsapp" placeholder="+506 8888 8888" class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-indigo-500 transition-colors" onchange="sf_updateBusiness()">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-slate-400 mb-1">Horario</label>
-                                <input type="text" id="sf-admin-schedule" placeholder="Lun - Dom: 8:00 AM - 10:00 PM" class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-indigo-500 transition-colors" onchange="sf_updateBusiness()">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="space-y-6">
-                        <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6 sf-animate-up">
-                            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                                <i data-lucide="globe" class="w-5 h-5 text-indigo-500"></i>
-                                Tu Página Web
-                            </h3>
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">Dominio</label>
-                                    <div class="px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg">
-                                        <span id="sf-domain-display" class="text-indigo-400 font-mono">mi-negocio.sitefly.app</span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-slate-400 mb-1">SEO</label>
-                                    <div class="px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg">
-                                        <p id="sf-seo-display" class="text-sm text-slate-300">Optimizado para "Restaurante en San José"</p>
-                                    </div>
-                                </div>
-                                <a id="sf-preview-link" href="#" target="_blank" class="block w-full text-center bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-lg transition-colors">
-                                    <i data-lucide="external-link" class="w-4 h-4 inline mr-2"></i>Ver Página Pública
-                                </a>
-                            </div>
-                        </div>
-
-                        <div class="bg-gradient-to-br from-indigo-600/20 to-purple-600/20 border border-indigo-500/30 rounded-xl p-6 sf-animate-up">
-                            <h3 class="text-lg font-semibold mb-2 flex items-center gap-2">
-                                <i data-lucide="crown" class="w-5 h-5 text-yellow-500"></i>
-                                Plan Actual
-                            </h3>
-                            <p id="plan-description" class="text-sm text-slate-300 mb-4">Hasta 5 productos, pedidos por WhatsApp</p>
-                            <button onclick="openPricing()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium py-3 rounded-lg transition-all">
-                                Mejorar a Pro
-                            </button>
-                        </div>
-                    </div>
-                </div>
+        <!-- ========== PRODUCTS TAB ========== -->
+        <div id="view-products" class="hidden space-y-6">
+            <div class="flex justify-between items-center gap-4">
+                <div><h2 class="text-2xl font-bold">Mis Productos</h2><p class="text-sm text-gray-400">Crea, edita y elimina productos.</p></div>
+                <button onclick="openProductModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Nuevo Producto</button>
             </div>
+            <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+        </div>
 
-            <!-- Productos Tab -->
-            <div id="sf-admin-productos" class="sf-hidden">
-                <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6 sf-animate-up">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-lg font-semibold flex items-center gap-2">
-                            <i data-lucide="package" class="w-5 h-5 text-indigo-500"></i>
-                            Catálogo de Productos
-                        </h3>
-                        <button onclick="sf_addProduct()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
-                            <i data-lucide="plus" class="w-4 h-4"></i> Agregar Producto
-                        </button>
-                    </div>
-                    <div id="sf-product-list" class="space-y-3"></div>
+        <!-- ========== DESIGN TAB ========== -->
+        <div id="view-design" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold">Diseño y Plantilla</h2>
+            <div class="glass p-6 rounded-2xl border border-gray-800 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><p class="text-gray-400 mb-1">Plantilla actual</p><p id="design-template" class="text-white font-bold text-lg">...</p></div>
+                    <div><p class="text-gray-400 mb-1">Tema visual</p><p id="design-theme" class="text-white font-bold text-lg">...</p></div>
                 </div>
+                <div class="p-4 bg-yellow-900/20 border border-yellow-700/50 rounded-lg text-yellow-200 text-sm">ℹ️ Puedes ajustar color de marca y contenido básico. Próximamente más plantillas.</div>
             </div>
+            <div class="glass p-6 rounded-2xl border border-gray-800">
+                <h3 class="font-bold text-lg mb-4">Cambiar color de marca</h3>
+                <div class="flex items-center gap-3"><input type="color" id="design-brand-color" class="w-16 h-12 rounded-lg bg-transparent border border-gray-700 p-1"><button onclick="saveBrandColor()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg font-medium">Guardar color</button></div>
+            </div>
+        </div>
 
-            <!-- Pedidos Tab -->
-            <div id="sf-admin-pedidos" class="sf-hidden">
-                <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6 sf-animate-up">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-lg font-semibold flex items-center gap-2">
-                            <i data-lucide="shopping-bag" class="w-5 h-5 text-indigo-500"></i>
-                            Pedidos Recientes
-                        </h3>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead>
-                                <tr class="text-left text-xs text-slate-400 uppercase tracking-wider border-b border-slate-700">
-                                    <th class="px-4 py-3 font-medium">#ID</th>
-                                    <th class="px-4 py-3 font-medium">Cliente</th>
-                                    <th class="px-4 py-3 font-medium">Total</th>
-                                    <th class="px-4 py-3 font-medium">Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody id="sf-orders-list" class="text-sm"></tbody>
-                        </table>
-                    </div>
-                </div>
+        <!-- ========== ORDERS TAB ========== -->
+        <div id="view-orders" class="hidden space-y-6">
+            <div class="flex justify-between items-center gap-4">
+                <div><h2 class="text-2xl font-bold">Pedidos Recientes</h2><p class="text-sm text-gray-400">Revisa las compras generadas por WhatsApp.</p></div>
+                <button onclick="loadOrders()" class="bg-gray-900 hover:bg-gray-800 border border-gray-700 text-white px-4 py-3 rounded-lg font-medium flex items-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Refrescar</button>
             </div>
+            <div id="orders-list" class="space-y-4"></div>
+        </div>
 
-            <!-- Asistente IA Tab -->
-            <div id="sf-admin-asistente" class="sf-hidden">
-                <div class="max-w-2xl mx-auto">
-                    <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6 sf-animate-up">
-                        <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                            <i data-lucide="sparkles" class="w-5 h-5 text-indigo-500"></i>
-                            Asistente Virtual con IA
-                        </h3>
-                        <div id="sf-assistant-chat" class="h-64 overflow-y-auto mb-4 space-y-3 pr-2">
-                            <div class="flex gap-3">
-                                <img src="https://image.qwenlm.ai/public_source/0ba08b56-35a5-4f25-adda-eb45071b3040/115239c29-3833-4da1-a16c-f38fdf34252c.png" class="w-8 h-8 rounded-full">
-                                <div class="bg-slate-700 text-white px-4 py-3 rounded-2xl text-sm max-w-[80%]">
-                                    ¡Hola! Soy tu asistente virtual. Puedo ayudarte a:
-                                    <br>• Agregar productos: "Agrega un producto llamado Café a $2.50"
-                                    <br>• Cambiar precios: "Cambia el precio de la Hamburguesa a $10"
-                                    <br>• Cambiar horario: "Cambia el horario a 8am a 6pm"
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex gap-2">
-                            <input type="text" id="sf-assistant-input" placeholder="Escribe tu comando..." 
-                                class="flex-1 px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl focus:outline-none focus:border-indigo-500 transition-colors"
-                                onkeypress="if(event.key==='Enter') sf_processAssistantCommand()">
-                            <button onclick="sf_processAssistantCommand()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl transition-colors">
-                                <i data-lucide="send" class="w-5 h-5"></i>
-                            </button>
-                        </div>
-                    </div>
+        <!-- ========== ASSISTANT TAB ========== -->
+        <div id="view-assistant" class="hidden max-w-2xl mx-auto">
+            <div class="glass p-6 rounded-2xl border border-gray-800 sf-animate-up">
+                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2"><i data-lucide="sparkles" class="w-5 h-5 text-indigo-500"></i> Asistente Virtual con IA</h3>
+                <div id="sf-assistant-chat" class="h-64 overflow-y-auto mb-4 space-y-3 pr-2">
+                    <div class="flex gap-3"><div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs">AI</div><div class="bg-slate-700 text-white px-4 py-3 rounded-2xl text-sm max-w-[80%]">¡Hola! Soy tu asistente. Puedo ayudarte a:<br>• Agregar productos: "Agrega Café a $2.50"<br>• Cambiar precios: "Cambia precio de Hamburguesa a $10"<br>• Cambiar horario: "Cambia horario a 8am a 6pm"</div></div>
                 </div>
+                <div class="flex gap-2"><input type="text" id="sf-assistant-input" placeholder="Escribe tu comando..." class="flex-1 px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl focus:outline-none focus:border-indigo-500" onkeypress="if(event.key==='Enter') processAssistantCommand()"><button onclick="processAssistantCommand()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl"><i data-lucide="send" class="w-5 h-5"></i></button></div>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
 
-    <!-- Pricing Modal -->
-    <div id="pricing-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onclick="if(event.target===this) closePricing()">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl font-bold">Mejora tu Plan</h2>
-                    <button onclick="closePricing()" class="text-slate-400 hover:text-white">
-                        <i data-lucide="x" class="w-6 h-6"></i>
-                    </button>
-                </div>
-                <div class="grid md:grid-cols-2 gap-4 mb-6">
-                    <div class="bg-slate-700/50 border border-slate-600 rounded-xl p-6">
-                        <h3 class="text-lg font-semibold mb-2">Gratuito</h3>
-                        <div class="text-3xl font-bold mb-4">$0<span class="text-sm font-normal text-slate-400">/mes</span></div>
-                        <ul class="space-y-2 text-sm text-slate-300">
-                            <li><i class="fas fa-check text-green-500 mr-2"></i>Hasta 5 productos</li>
-                            <li><i class="fas fa-check text-green-500 mr-2"></i>Pedidos por WhatsApp</li>
-                            <li><i class="fas fa-check text-green-500 mr-2"></i>Plantilla básica</li>
-                        </ul>
-                    </div>
-                    <div class="bg-gradient-to-br from-indigo-600/20 to-purple-600/20 border border-indigo-500 rounded-xl p-6 relative">
-                        <div class="absolute top-2 right-2 bg-indigo-600 text-white px-2 py-1 rounded text-xs font-medium">Recomendado</div>
-                        <h3 class="text-lg font-semibold mb-2">Pro</h3>
-                        <div class="text-3xl font-bold mb-4">$9<span class="text-sm font-normal text-slate-400">/mes</span></div>
-                        <ul class="space-y-2 text-sm text-slate-300">
-                            <li><i class="fas fa-check text-green-500 mr-2"></i>Productos ilimitados</li>
-                            <li><i class="fas fa-check text-green-500 mr-2"></i>Pedidos ilimitados</li>
-                            <li><i class="fas fa-check text-green-500 mr-2"></i>Plantillas premium</li>
-                            <li><i class="fas fa-check text-green-500 mr-2"></i>Sin comisión</li>
-                        </ul>
-                    </div>
-                </div>
-                <button onclick="upgradeToPro()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-3 rounded-xl transition-all">
-                    Suscribirse a Pro
-                </button>
-            </div>
+    <!-- Product Modal -->
+    <div id="product-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-4"><h3 id="product-modal-title" class="text-xl font-bold">Nuevo Producto</h3><button onclick="closeProductModal()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+            <input type="text" id="prod-name" placeholder="Nombre del producto" class="w-full input rounded-lg p-3 mb-3">
+            <textarea id="prod-desc" placeholder="Descripción" class="w-full input rounded-lg p-3 mb-3 h-24 resize-none"></textarea>
+            <div class="grid grid-cols-2 gap-3 mb-4"><input type="number" id="prod-price" placeholder="Precio" step="0.01" class="w-full input rounded-lg p-3"><input type="number" id="prod-stock" placeholder="Stock" step="1" class="w-full input rounded-lg p-3"></div>
+            <input type="text" id="prod-img" placeholder="URL Imagen (opcional)" class="w-full input rounded-lg p-3 mb-3">
+            <label class="flex items-center gap-2 text-sm text-gray-300 mb-4"><input type="checkbox" id="prod-active" checked> Producto activo</label>
+            <div class="flex justify-end gap-3"><button onclick="closeProductModal()" class="px-4 py-2 text-gray-400 hover:text-white">Cancelar</button><button onclick="saveProduct()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium">Guardar</button></div>
         </div>
     </div>
 
     <script src="js/config.js"></script>
-    <script src="js/admin.js"></script>
-    <script src="js/pagos.js"></script>
     <script>
-        // Initialize admin panel
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Check session
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                window.location.href = 'index.html';
-                return;
-            }
+        // ------------------------- GLOBAL STATE -------------------------
+        const sf_state = {
+            supabase: window.supabaseClient || (window.sf_state?.supabase || null),
+            businessId: null,
+            userId: null,
+            userData: {},
+            products: [],
+            orders: [],
+            lastOrderCount: 0
+        };
 
-            // Load business data from DB
-            const userId = session.user.id;
-            const { data: business, error } = await supabaseClient
-                .from('businesses')
-                .select('*')
-                .eq('user_id', userId)
-                .single();
+        let currentBusiness = null;
+        let editingProductId = null;
+        let slug = new URLSearchParams(window.location.search).get('slug') || new URLSearchParams(window.location.search).get('id');
 
-            if (business) {
-                // Update state with DB data
+        // Helper: show toast
+        function sf_showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        function escapeHtml(str) { return String(str ?? '').replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+        function money(value) { return new Intl.NumberFormat('en-US', {style:'currency',currency:'USD',minimumFractionDigits:2}).format(value || 0); }
+
+        // UI: switch tabs
+        function switchTab(tabId) {
+            document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${tabId}`)?.classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('tab-active'));
+            document.querySelector(`.tab-btn[data-tab="${tabId}"]`)?.classList.add('tab-active');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        // Set preview link
+        function setPreviewLink() {
+            let url = '#';
+            if (slug) url = `negocio.html?slug=${encodeURIComponent(slug)}`;
+            document.getElementById('view-site-btn')?.setAttribute('href', url);
+            document.getElementById('view-site-btn-mobile')?.setAttribute('href', url);
+        }
+
+        // Load business from DB using slug from URL
+        async function loadBusiness() {
+            setPreviewLink();
+            const statusDiv = document.getElementById('admin-status');
+            const statusText = document.getElementById('admin-status-text');
+            if (statusDiv) statusDiv.classList.remove('hidden');
+            if (statusText) statusText.textContent = 'Cargando negocio...';
+
+            try {
+                const supabase = sf_state.supabase;
+                if (!supabase || !slug) throw new Error('No supabase or slug');
+
+                // Try by slug, then by id
+                let { data: business, error } = await supabase.from('businesses').select('*').eq('slug', slug).maybeSingle();
+                if (error || !business) {
+                    const { data: byId } = await supabase.from('businesses').select('*').eq('id', slug).maybeSingle();
+                    if (byId) business = byId;
+                }
+                if (!business) throw new Error('Negocio no encontrado');
+
+                currentBusiness = business;
                 sf_state.businessId = business.id;
+                sf_state.userId = business.user_id;
                 sf_state.userData = {
                     name: business.name || '',
                     description: business.description || '',
-                    location: business.city || business.location || '',
+                    location: business.city || business.address || '',
                     whatsapp: business.whatsapp || '',
-                    hours: business.schedule || business.hours || 'Lun - Dom: 8:00 AM - 10:00 PM',
+                    hours: business.schedule || business.hours || '',
                     category: business.category || '',
-                    brandColor: business.brand_color || '#6366f1'
+                    brandColor: business.brand_color || '#2563eb'
                 };
 
-                // Update preview link
-                const slug = business.slug || business.id;
-                document.getElementById('sf-preview-link').href = `negocio.html?slug=${slug}`;
-                document.getElementById('business-name-header').textContent = business.name || 'Mi Negocio';
-            }
+                // Load products and orders
+                await loadProducts();
+                await loadOrders();
 
-            // Load products
-            const { data: products } = await supabaseClient
-                .from('products')
-                .select('*')
-                .eq('business_id', sf_state.businessId)
-                .order('created_at', { ascending: false });
-
-            if (products) sf_state.products = products;
-
-            // Load orders
-            const { data: orders } = await supabaseClient
-                .from('orders')
-                .select('*')
-                .eq('business_id', sf_state.businessId)
-                .order('created_at', { ascending: false });
-
-            if (orders) sf_state.orders = orders;
-
-            // Hide loading, show admin
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('admin-container').classList.remove('hidden');
-
-            // Initialize admin UI
-            sf_initAdmin();
-
-            // Start polling for new orders
-            startOrderPolling();
-        });
-
-        function startOrderPolling() {
-            setInterval(async () => {
-                if (!sf_state.businessId) return;
-                
-                const { data: orders } = await supabaseClient
-                    .from('orders')
-                    .select('*')
-                    .eq('business_id', sf_state.businessId)
-                    .eq('status', 'Pendiente');
-
-                if (orders && orders.length !== sf_lastOrderCount) {
-                    sf_state.orders = orders;
-                    sf_renderOrders();
-                    sf_lastOrderCount = orders.length;
-                    
-                    if (orders.length > 0) {
-                        sf_showToast(`¡${orders.length} nuevo(s) pedido(s)!`, 'success');
-                    }
-                }
-            }, 10000); // Poll every 10 seconds
-        }
-
-        function logout() {
-            supabase.auth.signOut().then(() => {
-                window.location.href = 'index.html';
-            });
-        }
-
-        function openPricing() {
-            document.getElementById('pricing-modal').classList.remove('hidden');
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-        }
-
-        function closePricing() {
-            document.getElementById('pricing-modal').classList.add('hidden');
-        }
-
-        function upgradeToPro() {
-            sf_showToast('Funcionalidad de pago próximamente', 'info');
-        }
-
-        // ===== DATABASE FUNCTIONS =====
-        async function sf_saveBusiness() {
-            if (!sf_state.businessId) {
-                // Create new business
-                const { data, error } = await supabaseClient
-                    .from('businesses')
-                    .insert({
-                        user_id: sf_state.userId || (await supabase.auth.getSession()).data.session?.user.id,
-                        name: sf_state.userData.name,
-                        description: sf_state.userData.description,
-                        city: sf_state.userData.city,
-                        location: sf_state.userData.location,
-                        schedule: sf_state.userData.schedule,
-                        hours: sf_state.userData.hours,
-                        whatsapp: sf_state.userData.whatsapp,
-                        category: sf_state.userData.category,
-                        brand_color: sf_state.userData.brandColor,
-                        slug: (sf_state.userData.name || 'mi-negocio').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-                    })
-                    .select()
-                    .single();
-                
-                if (error) {
-                    sf_showToast('Error guardando negocio: ' + error.message, 'error');
-                    return false;
-                }
-                sf_state.businessId = data.id;
-                sf_showToast('Negocio creado exitosamente', 'success');
-                return true;
-            } else {
-                // Update existing business
-                const { error } = await supabaseClient
-                    .from('businesses')
-                    .update({
-                        name: sf_state.userData.name,
-                        description: sf_state.userData.description,
-                        city: sf_state.userData.city,
-                        location: sf_state.userData.location,
-                        schedule: sf_state.userData.schedule,
-                        hours: sf_state.userData.hours,
-                        whatsapp: sf_state.userData.whatsapp,
-                        category: sf_state.userData.category,
-                        brand_color: sf_state.userData.brandColor
-                    })
-                    .eq('id', sf_state.businessId);
-                
-                if (error) {
-                    sf_showToast('Error actualizando negocio: ' + error.message, 'error');
-                    return false;
-                }
-                sf_showToast('Negocio actualizado', 'success');
-                return true;
+                // Render UI
+                renderBusinessInfo();
+                if (statusDiv) statusDiv.classList.add('hidden');
+                startOrderPolling();
+            } catch (err) {
+                console.error(err);
+                if (statusText) statusText.textContent = 'Error cargando negocio. Verifica la URL o conexión.';
+                sf_showToast('No se pudo cargar el negocio', 'error');
             }
         }
 
-        async function sf_saveProduct(product) {
-            const productData = {
-                business_id: sf_state.businessId,
-                name: product.name,
-                description: product.description || '',
-                price: parseFloat(product.price) || 0
-            };
-
-            if (product.id && !product.id.startsWith('demo-')) {
-                // Update existing product
-                const { data, error } = await supabaseClient
-                    .from('products')
-                    .update(productData)
-                    .eq('id', product.id)
-                    .select()
-                    .single();
-                
-                if (error) {
-                    sf_showToast('Error actualizando producto: ' + error.message, 'error');
-                    return null;
-                }
-                sf_showToast('Producto actualizado', 'success');
-                return data;
-            } else {
-                // Create new product
-                const { data, error } = await supabaseClient
-                    .from('products')
-                    .insert(productData)
-                    .select()
-                    .single();
-                
-                if (error) {
-                    sf_showToast('Error creando producto: ' + error.message, 'error');
-                    return null;
-                }
-                sf_showToast('Producto agregado', 'success');
-                return data;
-            }
+        async function loadProducts() {
+            if (!sf_state.supabase || !sf_state.businessId) return;
+            const { data, error } = await sf_state.supabase.from('products').select('*').eq('business_id', sf_state.businessId).order('created_at', { ascending: false });
+            if (!error && data) sf_state.products = data;
+            renderProducts();
         }
 
-        async function sf_deleteProductFromDB(productId) {
-            if (!productId || productId.startsWith('demo-')) return true;
-            
-            const { error } = await supabaseClient
-                .from('products')
-                .delete()
-                .eq('id', productId);
-            
-            if (error) {
-                sf_showToast('Error eliminando producto: ' + error.message, 'error');
-                return false;
-            }
-            sf_showToast('Producto eliminado', 'success');
-            return true;
+        async function loadOrders() {
+            if (!sf_state.supabase || !sf_state.businessId) return;
+            const { data, error } = await sf_state.supabase.from('orders').select('*').eq('business_id', sf_state.businessId).order('created_at', { ascending: false });
+            if (!error && data) { sf_state.orders = data; renderOrders(); }
         }
 
-        function sf_showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-xl shadow-lg z-50 transform transition-all duration-300 translate-y-full opacity-0 ${
-                type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-indigo-600'
-            } text-white`;
-            toast.innerHTML = `
-                <div class="flex items-center gap-2">
-                    <i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info'}" class="w-5 h-5"></i>
-                    <span>${message}</span>
+        function renderBusinessInfo() {
+            if (!currentBusiness) return;
+            document.getElementById('business-name-sidebar').textContent = currentBusiness.name || 'Negocio';
+            document.getElementById('business-name-mobile').textContent = currentBusiness.name || 'Negocio';
+            document.getElementById('edit-name').value = currentBusiness.name || '';
+            document.getElementById('edit-whatsapp').value = currentBusiness.whatsapp || '';
+            document.getElementById('edit-category').value = currentBusiness.category || '';
+            document.getElementById('edit-description').value = currentBusiness.description || '';
+            document.getElementById('edit-address').value = currentBusiness.address || currentBusiness.city || '';
+            document.getElementById('edit-brand-color').value = currentBusiness.brand_color || '#2563eb';
+            document.getElementById('current-template').textContent = currentBusiness.template_id || 'default';
+            document.getElementById('current-plan').textContent = currentBusiness.plan || 'free';
+            document.getElementById('current-slug').textContent = currentBusiness.slug || slug || '—';
+            document.getElementById('design-template').textContent = currentBusiness.template_id || 'default';
+            document.getElementById('design-theme').textContent = 'Tema personalizado';
+            document.getElementById('total-visits').textContent = currentBusiness.total_visits || currentBusiness.visits || 0;
+            document.getElementById('whatsapp-clicks').textContent = currentBusiness.whatsapp_clicks || 0;
+            const activeCount = sf_state.products.filter(p => p.active !== false).length;
+            document.getElementById('active-products-count').textContent = activeCount;
+            document.getElementById('orders-count').textContent = sf_state.orders.length;
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('products-grid');
+            if (!grid) return;
+            if (!sf_state.products.length) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400">No hay productos aún. ¡Agrega el primero!</div>`;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                return;
+            }
+            grid.innerHTML = sf_state.products.map(p => `
+                <div class="glass p-4 rounded-xl border border-gray-800 flex flex-col gap-3">
+                    <div class="h-40 bg-gray-800 rounded-lg overflow-hidden relative">
+                        ${p.image_url ? `<img src="${escapeHtml(p.image_url)}" class="w-full h-full object-cover">` : '<div class="w-full h-full flex items-center justify-center text-gray-600">Sin imagen</div>'}
+                        <button onclick="deleteProduct('${p.id}')" class="absolute top-2 right-2 bg-red-500/80 p-1.5 rounded-full hover:bg-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <button onclick="editProduct('${p.id}')" class="absolute top-2 left-2 bg-blue-500/80 p-1.5 rounded-full hover:bg-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                    </div>
+                    <div><h4 class="font-bold text-lg">${escapeHtml(p.name)}</h4><p class="text-sm text-gray-400">${escapeHtml(p.description || '')}</p><div class="mt-2 flex justify-between"><span class="text-blue-400 font-bold">${money(p.price)}</span><span class="text-xs ${p.active ? 'text-green-400' : 'text-red-400'}">${p.active ? 'Activo' : 'Oculto'}</span></div></div>
                 </div>
-            `;
-            document.body.appendChild(toast);
-            
+            `).join('');
             if (typeof lucide !== 'undefined') lucide.createIcons();
-            
-            setTimeout(() => {
-                toast.classList.remove('translate-y-full', 'opacity-0');
-            }, 100);
-            
-            setTimeout(() => {
-                toast.classList.add('translate-y-full', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
         }
+
+        function renderOrders() {
+            const container = document.getElementById('orders-list');
+            if (!container) return;
+            if (!sf_state.orders.length) {
+                container.innerHTML = `<div class="glass p-8 rounded-2xl text-center text-gray-400"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-4 opacity-50"></i><p>No hay pedidos recientes.</p></div>`;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                return;
+            }
+            container.innerHTML = sf_state.orders.map(order => `
+                <div class="glass p-5 rounded-2xl border border-gray-800">
+                    <div class="flex justify-between"><div><h4 class="font-bold">${escapeHtml(order.customer_name || 'Cliente')}</h4><p class="text-sm text-gray-400">${escapeHtml(order.customer_phone || '')}</p><p class="text-sm text-gray-400">${escapeHtml(order.customer_address || '')}</p></div><div class="text-right"><div class="text-xl font-bold text-green-400">${money(order.total)}</div><div class="text-xs text-gray-500">${new Date(order.created_at).toLocaleString()}</div></div></div>
+                    <div class="mt-2 flex gap-2"><span class="px-2 py-1 rounded-full bg-gray-800 text-xs">${escapeHtml(order.status || 'pendiente')}</span><span class="px-2 py-1 rounded-full bg-gray-800 text-xs">${escapeHtml(order.invoice_type || 'normal')}</span></div>
+                </div>
+            `).join('');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        // Product CRUD
+        function openProductModal() { editingProductId = null; document.getElementById('product-modal-title').textContent = 'Nuevo Producto'; document.getElementById('product-modal').classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+        function closeProductModal() { document.getElementById('product-modal').classList.add('hidden'); document.body.style.overflow = ''; document.getElementById('prod-name').value = ''; document.getElementById('prod-desc').value = ''; document.getElementById('prod-price').value = ''; document.getElementById('prod-img').value = ''; document.getElementById('prod-stock').value = ''; document.getElementById('prod-active').checked = true; editingProductId = null; }
+        function editProduct(id) { const p = sf_state.products.find(prod => prod.id == id); if(!p) return; editingProductId = p.id; document.getElementById('product-modal-title').textContent = 'Editar Producto'; document.getElementById('prod-name').value = p.name || ''; document.getElementById('prod-desc').value = p.description || ''; document.getElementById('prod-price').value = p.price ?? ''; document.getElementById('prod-img').value = p.image_url || ''; document.getElementById('prod-stock').value = p.stock ?? ''; document.getElementById('prod-active').checked = p.active !== false; document.getElementById('product-modal').classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+        async function saveProduct() {
+            const name = document.getElementById('prod-name').value.trim();
+            const price = parseFloat(document.getElementById('prod-price').value);
+            if (!name || isNaN(price)) { sf_showToast('Nombre y precio son obligatorios', 'error'); return; }
+            const payload = { business_id: sf_state.businessId, name, description: document.getElementById('prod-desc').value.trim(), price, image_url: document.getElementById('prod-img').value.trim(), stock: parseInt(document.getElementById('prod-stock').value) || 0, active: document.getElementById('prod-active').checked };
+            try {
+                if (sf_state.supabase && sf_state.businessId) {
+                    if (editingProductId) {
+                        await sf_state.supabase.from('products').update(payload).eq('id', editingProductId);
+                        sf_showToast('Producto actualizado', 'success');
+                    } else {
+                        const { data } = await sf_state.supabase.from('products').insert(payload).select().single();
+                        if (data) sf_state.products.unshift(data);
+                        sf_showToast('Producto agregado', 'success');
+                    }
+                    await loadProducts();
+                } else { throw new Error('No Supabase'); }
+                closeProductModal();
+                renderProducts();
+            } catch(e) { sf_showToast('Error guardando producto', 'error'); }
+        }
+        async function deleteProduct(id) { if(!confirm('¿Eliminar producto?')) return; try { await sf_state.supabase.from('products').delete().eq('id', id); await loadProducts(); sf_showToast('Producto eliminado', 'success'); } catch(e) { sf_showToast('Error', 'error'); } }
+
+        // Save business info
+        async function saveBasicInfo() {
+            const name = document.getElementById('edit-name').value.trim();
+            const whatsapp = document.getElementById('edit-whatsapp').value.trim();
+            if (!name || !whatsapp) { sf_showToast('Nombre y WhatsApp requeridos', 'error'); return; }
+            const updates = { name, whatsapp, category: document.getElementById('edit-category').value.trim(), description: document.getElementById('edit-description').value.trim(), address: document.getElementById('edit-address').value.trim(), brand_color: document.getElementById('edit-brand-color').value };
+            try {
+                await sf_state.supabase.from('businesses').update(updates).eq('id', sf_state.businessId);
+                Object.assign(currentBusiness, updates);
+                renderBusinessInfo();
+                sf_showToast('Información actualizada', 'success');
+            } catch(e) { sf_showToast('Error al guardar', 'error'); }
+        }
+        async function saveBrandColor() { const color = document.getElementById('design-brand-color').value; try { await sf_state.supabase.from('businesses').update({ brand_color: color }).eq('id', sf_state.businessId); currentBusiness.brand_color = color; renderBusinessInfo(); sf_showToast('Color actualizado', 'success'); } catch(e) { sf_showToast('Error', 'error'); } }
+        async function refreshDashboard() { await loadBusiness(); sf_showToast('Datos refrescados', 'info'); }
+
+        // Order polling
+        let pollingInterval = null;
+        function startOrderPolling() { if(pollingInterval) clearInterval(pollingInterval); pollingInterval = setInterval(async () => { if(!sf_state.businessId) return; const { data } = await sf_state.supabase.from('orders').select('*').eq('business_id', sf_state.businessId).order('created_at', { ascending: false }); if(data && data.length !== sf_state.lastOrderCount) { sf_state.orders = data; renderOrders(); sf_state.lastOrderCount = data.length; if(data.length > (sf_state.lastOrderCountPrev||0)) sf_showToast(`¡${data.length} nuevo(s) pedido(s)!`, 'success'); sf_state.lastOrderCountPrev = data.length; } }, 10000); }
+
+        // Assistant IA (simulated)
+        async function processAssistantCommand() {
+            const input = document.getElementById('sf-assistant-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+            addAssistantMessage(msg, 'user');
+            input.value = '';
+            // Simple command parsing
+            let response = "No entendí el comando. Intenta: 'Agrega producto X a precio Y' o 'Cambia precio de Hamburguesa a 10' o 'Cambia horario a 9am-9pm'";
+            const lower = msg.toLowerCase();
+            if (lower.includes('agrega') && lower.includes('producto')) {
+                const match = msg.match(/agrega\s+([\w\s]+?)\s+a\s*\$?([\d\.]+)/i);
+                if (match) {
+                    const name = match[1].trim();
+                    const price = parseFloat(match[2]);
+                    if (name && !isNaN(price)) {
+                        const newProd = { business_id: sf_state.businessId, name, price, description: 'Agregado por asistente', active: true };
+                        const { data, error } = await sf_state.supabase.from('products').insert(newProd).select().single();
+                        if (!error && data) { sf_state.products.unshift(data); renderProducts(); response = `✅ Producto "${name}" agregado por $${price}.`; }
+                        else response = `❌ Error al agregar producto.`;
+                    } else response = `❌ Usa: "Agrega Café a 2.50"`;
+                } else response = `❌ Usa: "Agrega Café a 2.50"`;
+            } else if (lower.includes('cambia precio')) {
+                const match = msg.match(/cambia precio de\s+([\w\s]+?)\s+a\s*\$?([\d\.]+)/i);
+                if (match && sf_state.products.length) {
+                    const targetName = match[1].trim().toLowerCase();
+                    const newPrice = parseFloat(match[2]);
+                    const prod = sf_state.products.find(p => p.name.toLowerCase().includes(targetName));
+                    if (prod && !isNaN(newPrice)) {
+                        const { error } = await sf_state.supabase.from('products').update({ price: newPrice }).eq('id', prod.id);
+                        if (!error) { prod.price = newPrice; renderProducts(); response = `✅ Precio de "${prod.name}" actualizado a $${newPrice}.`; }
+                        else response = `❌ Error al actualizar precio.`;
+                    } else response = `❌ Producto no encontrado o precio inválido.`;
+                } else response = `❌ Ejemplo: "Cambia precio de Hamburguesa a 10"`;
+            } else if (lower.includes('cambia horario')) {
+                const newHours = msg.replace(/cambia horario a/i, '').trim();
+                if (newHours) {
+                    const { error } = await sf_state.supabase.from('businesses').update({ hours: newHours, schedule: newHours }).eq('id', sf_state.businessId);
+                    if (!error) { currentBusiness.hours = newHours; renderBusinessInfo(); response = `⏰ Horario cambiado a: ${newHours}`; }
+                    else response = `❌ Error al cambiar horario.`;
+                } else response = `❌ Indica el nuevo horario, ej: "Cambia horario a 8am-8pm"`;
+            }
+            addAssistantMessage(response, 'assistant');
+        }
+        function addAssistantMessage(text, role) { const chat = document.getElementById('sf-assistant-chat'); const div = document.createElement('div'); div.className = `flex gap-3 ${role === 'user' ? 'justify-end' : ''}`; if(role === 'user') div.innerHTML = `<div class="bg-indigo-600 text-white px-4 py-3 rounded-2xl text-sm max-w-[80%]">${escapeHtml(text)}</div><div class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-xs">Tú</div>`; else div.innerHTML = `<div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs">AI</div><div class="bg-slate-700 text-white px-4 py-3 rounded-2xl text-sm max-w-[80%]">${escapeHtml(text)}</div>`; chat.appendChild(div); chat.scrollTop = chat.scrollHeight; if (typeof lucide !== 'undefined') lucide.createIcons(); }
+
+        // Expose globals
+        window.switchTab = switchTab;
+        window.openProductModal = openProductModal;
+        window.closeProductModal = closeProductModal;
+        window.saveProduct = saveProduct;
+        window.deleteProduct = deleteProduct;
+        window.editProduct = editProduct;
+        window.saveBasicInfo = saveBasicInfo;
+        window.saveBrandColor = saveBrandColor;
+        window.refreshDashboard = refreshDashboard;
+        window.loadOrders = loadOrders;
+        window.processAssistantCommand = processAssistantCommand;
+
+        // Init
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            if (window.supabaseClient) sf_state.supabase = window.supabaseClient;
+            else if (window.sf_state?.supabase) sf_state.supabase = window.sf_state.supabase;
+            else console.warn('Supabase client not found. Make sure js/config.js defines supabaseClient globally.');
+
+            await loadBusiness();
+            switchTab('overview');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        });
     </script>
 </body>
 </html>
