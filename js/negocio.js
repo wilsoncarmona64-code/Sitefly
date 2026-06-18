@@ -408,6 +408,7 @@
         const c = client();
         if (c && state().business?.id) {
             try {
+                // CORRECCIÓN 1: Mapeo directo de productos en el array JSONB de 'items' en vez de usar 'order_items'
                 const orderData = {
                     business_id: state().business.id,
                     customer_name: name,
@@ -415,7 +416,8 @@
                     customer_address: address,
                     subtotal,
                     total,
-                    status: 'pending'
+                    status: 'pending',
+                    items: state().cart
                 };
 
                 const { data: savedOrder, error } = await c
@@ -426,17 +428,6 @@
 
                 if (error) throw error;
 
-                if (savedOrder?.id && state().cart.length) {
-                    const orderItems = state().cart.map(item => ({
-                        order_id: savedOrder.id,
-                        product_id: item.id,
-                        quantity: item.qty,
-                        price: Number(item.price || 0)
-                    }));
-
-                    const { error: itemsError } = await c.from('order_items').insert(orderItems);
-                    if (itemsError) console.warn('No se pudieron guardar todos los items del pedido:', itemsError);
-                }
             } catch (dbError) {
                 console.warn('Error guardando orden en DB, continuando con WhatsApp:', dbError);
             }
@@ -479,7 +470,10 @@
         qs('hero-name').textContent = business.name || 'Mi Negocio';
         qs('hero-description').textContent = business.description || 'Negocio creado con SiteFly.';
         qs('info-description').textContent = business.description || 'Sin descripción aún.';
-        qs('info-location').textContent = business.city || business.address || 'Ubicación no especificada';
+        
+        // CORRECCIÓN 3a: Fallback defensivo que prioriza la columna 'location' para evitar el texto "no especificada"
+        qs('info-location').textContent = business.location || business.city || business.address || 'Ubicación no especificada';
+        
         qs('info-hours').textContent = business.schedule || business.hours || 'Horario no especificado';
         qs('footer-name').textContent = `© ${new Date().getFullYear()} ${business.name || 'Mi Negocio'}. Todos los derechos reservados.`;
 
@@ -595,10 +589,11 @@
 
             if (c && typeof c.from === 'function') {
                 if (businessKey) {
+                    // CORRECCIÓN 3b: Consulta transicional usando .or() para soportar de manera fluida tanto 'slug' como 'domain'
                     const slugResult = await c
                         .from('businesses')
                         .select('*')
-                        .eq('slug', businessKey)
+                        .or(`slug.eq.${businessKey},domain.eq.${businessKey}`)
                         .maybeSingle();
 
                     if (slugResult?.data) {
@@ -639,7 +634,8 @@
                     .from('products')
                     .select('*')
                     .eq('business_id', s.businessId)
-                    .eq('active', true)
+                    // CORRECCIÓN 2: .eq('active', true) comentado para evitar fallos 400 hasta aplicar la migración SQL
+                    // .eq('active', true)
                     .order('created_at', { ascending: false });
 
                 s.products = Array.isArray(productsResult?.data) ? productsResult.data : [];
